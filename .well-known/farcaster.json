@@ -10,7 +10,7 @@
     "splashBackgroundColor": "#000000",
     "webhookUrl": "https://farcaster-born-fire.vercel.app/api/webhook",
     "subtitle": "Immutable Catharsis Protocol",
-    "description": "A cinematic blockchain ritual. Write your regrets, watch them turn to ash via high-fidelity physics, and permanently burn them on the Base network. Includes a dual-layer history indexer and generates high-resolution cryptographic proof cards for sharing.",
+    "description": "A cinematic blockchain ritual. Write your regrets, watch them turn to ash, and permanently burn them on the Base network.",
     "primaryCategory": "social",
     "tags": [
       "base",
@@ -23,7 +23,7 @@
     "ogDescription": "Immutable Catharsis. Burn your 2025 regrets on the Base Blockchain.",
     "ogTitle": "The Digital Bonfire",
     "ogImageUrl": "https://placehold.co/1200x630/020202/ff4500.png?text=THE+DIGITAL+BONFIRE&font=playfair-display",
-    "castShareUrl": "https://warpcast.com/~/compose?text=I%20am%20burning%20my%202025%20regrets%20on%20Base.%20%F0%9F%94%A5&embeds[]=https://farcaster-born-fire.vercel.app"
+    "castShareUrl": "https://farcaster-born-fire.vercel.app"
   },
   "accountAssociation": {
     "header": "eyJmaWQiOjg0NTYyMywidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweDhiM2JhMjBGYzEwNGY4ZGJGY0Y0QTgwNjJjRjJhRjhBMWZkOTY2N2MifQ",
