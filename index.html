@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#020202">
+    <meta name="description" content="Immutable Catharsis. Burn your 2025 regrets on the Base Blockchain.">
+    
+    <meta property="og:title" content="The Digital Bonfire">
+    <meta property="og:description" content="Leave it in 2025. Burn it on-chain.">
+    <meta property="og:image" content="https://images.unsplash.com/photo-1533575770077-052fa2cba0c0?q=80&w=1200">
+    <meta name="fc:frame" content="vNext">
+    <meta name="fc:frame:image" content="https://images.unsplash.com/photo-1533575770077-052fa2cba0c0?q=80&w=1200">
+    <meta name="fc:frame:button:1" content="Begin Ritual">
+    
+    <title>The Digital Bonfire | Protocol 2025</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Inter:wght@300;400;600&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    
+    <script src="https://onchat.sebayaki.com/widget.js"></script>
+
+    <script type="module">
+        try {
+            const { sdk } = await import('https://esm.sh/@farcaster/miniapp-sdk@0.0.61');
+            window.sdk = sdk;
+            await sdk.actions.ready({ disableNativeGestures: true });
+            console.log('✅ Farcaster SDK initialized');
+            
+            // Trigger haptic on load to confirm readiness
+            try { sdk.actions.haptics.notificationOccurred('success'); } catch(e){}
+        } catch (error) {
+            console.error('❌ Farcaster SDK failed:', error);
+        }
+    </script>
+
+    <style>
+        :root {
+            /* Palette: Volcanic Glass */
+            --bg-void: #020202;
+            --c-ember: #ff3c00;
+            --c-ember-glow: #ff8400;
+            --c-ash: #111111;
+            --c-text: #e0e0e0;
+            --c-dim: #666;
+            --c-term-online: #00ff9d;
+            --c-term-warn: #ffcc00;
+            --c-term-err: #ff0055;
+            
+            /* Typography */
+            --f-head: 'Cinzel', serif;
+            --f-body: 'Inter', sans-serif;
+            --f-code: 'Space Mono', monospace;
+            
+            /* Animation Physics */
+            --ease-snap: cubic-bezier(0.22, 1, 0.36, 1);
+            --ease-elastic: cubic-bezier(0.34, 1.56, 0.64, 1);
+            
+            /* Layout Safe Areas */
+            --safe-top: env(safe-area-inset-top, 20px);
+            --safe-bottom: env(safe-area-inset-bottom, 20px);
+        }
+
+        /* --- GLOBAL RESET --- */
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; outline:none; user-select:none; }
+        
+        body {
+            background-color: var(--bg-void); color: var(--c-text);
+            font-family: var(--f-body); height: 100vh; width: 100vw;
+            overflow: hidden; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+        }
+
+        /* --- FX LAYERS (Background) --- */
+        .layer { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+        #canvas-fire { z-index: 1; }
+        #canvas-ash { z-index: 50; } /* Ash renders on top of UI */
+        
+        #vignette {
+            z-index: 2;
+            background: radial-gradient(circle at 50% 60%, transparent 10%, #000 120%);
+        }
+        
+        #scanlines {
+            z-index: 3; opacity: 0.04;
+            background: repeating-linear-gradient(to bottom, transparent 0px, transparent 2px, #000 2px, #000 4px);
+            animation: scan 10s linear infinite;
+        }
+        
+        #noise {
+            z-index: 4; opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        }
+
+        /* --- UI CONTAINER --- */
+        #ui-layer {
+            position: relative; z-index: 10; width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            padding-top: var(--safe-top); padding-bottom: var(--safe-bottom);
+            perspective: 1200px; /* Enable 3D transforms */
+        }
+
+        /* --- HEADER (HUD) --- */
+        .hud-bar {
+            width: 100%; padding: 15px 20px; display: flex; justify-content: space-between; align-items: flex-start; z-index: 100;
+        }
+
+        .icon-btn {
+            width: 44px; height: 44px; background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
+            color: #888; backdrop-filter: blur(10px); cursor: pointer; transition: 0.2s;
+        }
+        .icon-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.1); color: white; }
+
+        /* Wallet Terminal UI */
+        .wallet-terminal {
+            font-family: var(--f-code); font-size: 0.6rem; text-transform: uppercase;
+            background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.15);
+            padding: 10px 14px; border-radius: 6px; display: flex; flex-direction: column;
+            gap: 4px; cursor: pointer; transition: 0.3s; text-align: right; min-width: 140px;
+            backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .wallet-terminal:hover { border-color: #555; background: #0a0a0a; }
+        
+        .sys-row { display: flex; justify-content: space-between; gap: 15px; color: #555; letter-spacing: 1px; }
+        .sys-val { color: #888; font-weight: 700; }
+        .sys-val.online { color: var(--c-term-online); text-shadow: 0 0 8px rgba(0,255,157,0.4); }
+        .sys-val.offline { color: var(--c-ember); animation: blink 1.5s infinite; }
+
+        /* Dropdown */
+        #wallet-menu {
+            position: absolute; top: 75px; right: 20px; width: 180px;
+            background: #0a0a0a; border: 1px solid #333; border-radius: 4px;
+            display: none; flex-direction: column; gap: 1px;
+            box-shadow: 0 10px 40px rgba(0,0,0,1);
+        }
+        #wallet-menu.visible { display: flex; animation: slideIn 0.15s ease-out; }
+        
+        .menu-opt {
+            padding: 12px; background: transparent; border: none; color: #aaa;
+            font-family: var(--f-code); font-size: 0.7rem; text-align: left;
+            cursor: pointer; display: flex; align-items: center; gap: 10px;
+        }
+        .menu-opt:hover { background: #151515; color: white; }
+        .menu-opt.danger { color: #ff4444; border-top: 1px solid #222; }
+
+        /* --- VIEW CONTROLLER --- */
+        .view-container {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 100%; max-width: 460px; margin: 0 auto; position: relative;
+        }
+
+        .view-page {
+            position: absolute; width: 100%; top: 0;
+            display: flex; flex-direction: column; align-items: center;
+            transition: all 0.8s var(--ease-out);
+            opacity: 0; pointer-events: none; transform: translateY(60px) scale(0.95); filter: blur(12px);
+        }
+        .view-page.active {
+            opacity: 1; pointer-events: auto; transform: translateY(0) scale(1); filter: blur(0); position: relative;
+        }
+
+        /* Titles */
+        h1.logo {
+            font-family: var(--f-head); font-size: 3.5rem; color: #fff;
+            text-transform: uppercase; line-height: 0.85; margin-bottom: 40px;
+            text-align: center; text-shadow: 0 0 60px rgba(255, 60, 0, 0.5);
+        }
+        h1.logo span {
+            display: block; font-family: var(--f-code); font-size: 0.65rem;
+            letter-spacing: 0.6em; opacity: 0.5; margin-top: 15px; color: var(--c-ember);
+        }
+
+        /* --- PAPER PHYSICS MODULE --- */
+        .burn-stage {
+            width: 100%; position: relative; perspective: 1200px; margin-bottom: 30px;
+        }
+        
+        /* The "Paper" Container */
+        .paper-input-wrapper {
+            width: 100%; background: #e3dcd2; /* Parchment Color */
+            padding: 4px; /* Border thickness */
+            box-shadow: 0 30px 80px rgba(0,0,0,0.8);
+            transform-origin: center bottom;
+            transition: transform 0.8s ease-in-out, opacity 0.8s, filter 0.8s;
+            position: relative;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.15'/%3E%3C/svg%3E");
+        }
+        
+        .paper-inner {
+            background: #e3dcd2; padding: 25px 15px; min-height: 140px;
+            display: flex; flex-direction: column; justify-content: center;
+            border: 1px solid #c0b090;
+        }
+
+        /* Burning State Animation */
+        .paper-input-wrapper.burning {
+            animation: paperBurnSequence 2.2s forwards cubic-bezier(0.6, 0.04, 0.98, 0.335);
+        }
+
+        @keyframes paperBurnSequence {
+            0% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+            20% { transform: scale(0.98) rotate(-1deg); filter: brightness(0.9) sepia(0.3); }
+            40% { transform: scale(0.9) rotate(2deg) translateY(-10px); filter: brightness(0.6) sepia(0.8) contrast(1.2); }
+            70% { transform: scale(0.7) rotate(-5deg) translateY(-40px); opacity: 1; filter: brightness(0.3) hue-rotate(-20deg); }
+            100% { transform: scale(0) rotate(15deg) translateY(-100px); opacity: 0; }
+        }
+
+        /* Input Styling */
+        textarea#regret-input {
+            width: 100%; background: transparent; border: none; resize: none;
+            font-family: var(--f-head); font-size: 1.6rem; font-weight: 700; color: #1a1a1a;
+            text-align: center; outline: none; overflow: hidden; line-height: 1.4;
+        }
+        textarea#regret-input::placeholder { 
+            color: rgba(0,0,0,0.3); font-family: var(--f-body); 
+            font-size: 1rem; font-style: italic; font-weight: 400; 
+        }
+
+        /* --- HOLD-TO-BURN BUTTON --- */
+        .ignite-wrapper {
+            margin-top: 10px; width: 100%; height: 64px;
+            background: #0f0f0f; border: 1px solid #333;
+            position: relative; overflow: hidden; cursor: pointer;
+            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.8);
+            transform: scale(1); transition: transform 0.1s;
+        }
+        .ignite-wrapper:active { transform: scale(0.98); border-color: #555; }
+        /* Shake effect */
+        .ignite-wrapper.holding { animation: vibration 0.1s linear infinite; border-color: var(--c-ember); }
+
+        .ignite-fill {
+            position: absolute; top:0; left:0; height:100%; width:0%;
+            background: linear-gradient(90deg, #ff3c00, #ff9d00);
+            transition: width 0.1s linear;
+        }
+        .ignite-label {
+            position: absolute; inset:0; display: flex; align-items: center; justify-content: center;
+            font-family: var(--f-code); font-size: 0.8rem; letter-spacing: 0.25em; text-transform: uppercase;
+            color: #666; z-index: 2; pointer-events: none; transition: 0.2s;
+        }
+        .ignite-wrapper:active .ignite-label { color: white; }
+
+        /* --- GLOBAL STATS --- */
+        .stats-ticker {
+            margin-top: 25px; font-family: var(--f-code); font-size: 0.65rem; color: #444;
+            display: flex; gap: 15px; justify-content: center; text-transform: uppercase;
+        }
+        .stats-ticker span { color: #666; }
+
+        /* --- RESULT CARD --- */
+        .ash-card {
+            background: #080808; border: 1px solid #222; width: 100%; padding: 50px 25px;
+            text-align: center; box-shadow: 0 0 100px rgba(0,0,0,0.9);
+            position: relative; border-radius: 4px; margin-bottom: 20px;
+        }
+        .ash-card::before {
+            content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.5;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+        }
+        .ash-card::after {
+            content: ""; position: absolute; top: 0; left: 20%; width: 60%; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--c-ember), transparent);
+            box-shadow: 0 0 20px var(--c-ember);
+        }
+        .burned-text {
+            font-family: var(--f-head); font-size: 1.8rem; color: #555; margin: 30px 0;
+            text-decoration: line-through; text-decoration-color: var(--c-ember);
+            text-decoration-thickness: 2px; line-height: 1.3;
+        }
+        
+        .tx-proof {
+            display: inline-block; font-family: var(--f-code); font-size: 0.7rem; color: var(--c-ember);
+            border-bottom: 1px dotted var(--c-ember); padding-bottom: 2px; text-decoration: none;
+        }
+
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
+        .btn-ghost {
+            padding: 16px; background: transparent; border: 1px solid #333; color: #888;
+            font-family: var(--f-code); font-size: 0.7rem; text-transform: uppercase;
+            cursor: pointer; transition: 0.2s; border-radius: 4px;
+        }
+        .btn-ghost:active { background: #222; color: white; border-color: #666; }
+
+        /* --- HISTORY DRAWER (Bottom Sheet) --- */
+        #history-drawer { position: fixed; inset: 0; z-index: 200; pointer-events: none; }
+        .drawer-bg { position: absolute; inset: 0; background: rgba(0,0,0,0.8); opacity: 0; transition: 0.4s; }
+        .drawer-panel {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 80vh;
+            background: #0a0a0a; border-top: 1px solid #333; 
+            transform: translateY(100%); transition: 0.5s var(--ease-elastic);
+            display: flex; flex-direction: column;
+        }
+        #history-drawer.open { pointer-events: auto; }
+        #history-drawer.open .drawer-bg { opacity: 1; }
+        #history-drawer.open .drawer-panel { transform: translateY(0); }
+
+        .drawer-grip { width: 40px; height: 4px; background: #333; margin: 12px auto; border-radius: 10px; }
+        .tab-bar { display: flex; border-bottom: 1px solid #222; }
+        .tab {
+            flex: 1; padding: 20px; background: none; border: none;
+            color: #555; font-family: var(--f-code); font-size: 0.75rem; text-transform: uppercase;
+            cursor: pointer; transition: 0.2s; position: relative;
+        }
+        .tab.active { color: white; background: #111; }
+        .tab.active::after {
+            content: ""; position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background: var(--c-ember);
+        }
+
+        #history-content { flex: 1; overflow-y: auto; padding: 0 20px 40px 20px; }
+        .log-item { padding: 20px 0; border-bottom: 1px solid #1a1a1a; animation: fadeUp 0.3s; display:flex; flex-direction:column; gap:8px;}
+        .log-text { font-family: var(--f-head); font-size: 1.1rem; color: #ddd; margin-bottom: 6px; word-break: break-word; }
+        .log-meta { display: flex; justify-content: space-between; align-items:center; font-size: 0.65rem; color: #555; font-family: var(--f-code); }
+        .log-link { color: var(--c-ember); text-decoration: none; opacity: 0.7; }
+        .log-share-btn { border: 1px solid #333; padding: 4px 10px; border-radius: 4px; background: transparent; color: #888; cursor: pointer; font-size: 0.6rem; text-transform: uppercase; font-family: var(--f-code); transition:0.2s; }
+        .log-share-btn:hover { border-color: var(--c-ember); color: var(--c-ember); background:rgba(255,60,0,0.1); }
+
+        /* --- TOAST & MODAL --- */
+        #toast {
+            position: fixed; top: 120px; left: 50%; transform: translateX(-50%) translateY(-20px);
+            background: #111; border: 1px solid #333; padding: 12px 24px; border-radius: 50px;
+            font-family: var(--f-code); font-size: 0.75rem; color: white; z-index: 500;
+            opacity: 0; transition: 0.3s; pointer-events: none; display: flex; align-items: center; gap: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        #toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        #share-modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 300;
+            display: none; align-items: center; justify-content: center; padding: 20px; flex-direction: column;
+        }
+        #share-img { max-width: 100%; border: 1px solid #333; box-shadow: 0 0 50px black; border-radius: 8px; }
+
+        @keyframes vibration { 0% { transform: translate(0, 0); } 20% { transform: translate(-1px, 1px); } 40% { transform: translate(1px, -1px); } 60% { transform: translate(-1px, -1px); } 80% { transform: translate(1px, 1px); } 100% { transform: translate(0, 0); } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        .hidden { display: none !important; }
+        #share-canvas { position: fixed; top: -9999px; visibility: hidden; }
+        #chat-btn { position: fixed; bottom: 20px; right: 20px; z-index: 90; font-size: 24px; background: rgba(10,10,10,0.9); border: 1px solid #333; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; color: white; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+        #debug { position: fixed; bottom: 0; left: 0; width: 100%; max-height: 100px; background: rgba(0,0,0,0.9); color: #0f0; font-family: monospace; font-size: 10px; overflow-y: auto; z-index: 9999; display: none; padding: 10px; border-top: 1px solid #0f0; }
+    </style>
+</head>
+<body>
+
+    <canvas id="canvas-fire" class="layer"></canvas>
+    <canvas id="canvas-ash" class="layer"></canvas>
+    <div id="vignette" class="layer"></div>
+    <div id="scanlines" class="layer"></div>
+    <div id="noise" class="layer"></div>
+
+    <div id="ui-layer">
+        
+        <div class="hud-bar">
+            <div class="icon-btn" onclick="History.open()">📜</div>
+            
+            <div style="position: relative;">
+                <div class="wallet-terminal" onclick="Wallet.toggleDropdown()">
+                    <div class="sys-row">
+                        <span>NET:</span>
+                        <span class="sys-val online">BASE</span>
+                    </div>
+                    <div class="sys-row">
+                        <span>STS:</span>
+                        <span id="wallet-status-text" class="sys-val offline">CONNECT_REQ</span>
+                    </div>
+                </div>
+                
+                <div id="wallet-menu">
+                    <button class="menu-opt" onclick="Wallet.copy()"><span>ID:</span> <span id="wallet-addr-short">...</span></button>
+                    <button class="menu-opt danger" onclick="Wallet.disconnect()"><span>>></span> TERMINATE</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="view-container">
+            
+            <div id="view-input" class="view-page active">
+                <h1 class="logo" id="logo-tap">The<br>Bonfire<span>PROTOCOL 2025</span></h1>
+                
+                <div class="burn-stage">
+                    <div id="paper-wrapper" class="paper-input-wrapper">
+                        <div class="paper-inner">
+                            <textarea id="regret-input" rows="2" placeholder="Write your regret here..." maxlength="80"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ignite-wrapper" id="ignite-btn">
+                    <div class="ignite-fill" id="ignite-fill"></div>
+                    <div class="ignite-label" id="ignite-text">HOLD TO BURN</div>
+                </div>
+
+                <div class="stats-ticker">
+                    <span>GLOBAL_ASHES:</span>
+                    <span id="global-burns" style="color:#fff">Loading...</span>
+                </div>
+            </div>
+
+            <div id="view-result" class="view-page">
+                <div class="ash-card">
+                    <div style="font-family:var(--f-code); font-size:0.6rem; letter-spacing:2px; color:#444; margin-bottom:15px;">STATUS: IRREVERSIBLE</div>
+                    <div id="burned-display" class="burned-text"></div>
+                    <a id="tx-link" href="#" target="_blank" class="tx-proof">View Chain Evidence ↗</a>
+                </div>
+                <div class="btn-grid">
+                    <button class="btn-ghost" onclick="Sharing.share()">Proof Card</button>
+                    <button class="btn-ghost" onclick="App.reset()">Burn Again</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="history-drawer">
+        <div class="drawer-bg" onclick="History.close()"></div>
+        <div class="drawer-panel">
+            <div class="drawer-grip"></div>
+            <div class="tab-bar">
+                <button class="tab active" onclick="History.switch('yours', this)">Your Burns</button>
+                <button class="tab" onclick="History.switch('global', this)">Global Ash</button>
+            </div>
+            <div id="history-content"></div>
+        </div>
+    </div>
+
+    <canvas id="share-canvas" width="1200" height="630"></canvas>
+    <div id="share-modal" onclick="this.style.display='none'">
+        <img id="share-img">
+        <p style="color:#888; font-family:var(--f-code); font-size:0.7rem; margin-top:20px;">LONG PRESS TO SAVE IMAGE</p>
+    </div>
+
+    <div id="toast">
+        <span id="t-icon">🔥</span>
+        <span id="t-msg">Notification</span>
+    </div>
+    
+    <div id="chat-btn" onclick="openOnChat()">💬</div>
+    <div id="onchat-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:2000;">
+        <div style="height:50px; display:flex; justify-content:flex-end; padding:10px;"><button onclick="closeOnChat()" style="background:none; border:none; color:white; font-size:24px;">✕</button></div>
+        <div id="onchat-widget" style="height:calc(100% - 50px);"></div>
+    </div>
+    
+    <div id="debug"></div>
+
+    <script>
+        const CONFIG = {
+            contract: "0x4d52d8618C7BE987621766aE1578cb3701a1209c",
+            chainIdHex: "0x2105", // Base Mainnet (8453)
+            // Multi-RPC Load Balancer List
+            rpcs: [
+                'https://mainnet.base.org',
+                'https://base.gateway.tenderly.co',
+                'https://base-rpc.publicnode.com',
+                'https://1rpc.io/base',
+                'https://base.publicnode.com'
+            ],
+            abi: [
+                "function burnRegret(string memory regret) public",
+                "function totalBurns() view returns (uint256)",
+                "event Burned(address indexed user, string regret, uint256 timestamp)"
+            ]
+        };
+
+        // --- APP CONTROLLER ---
+        const App = {
+            async init() {
+                try {
+                    // Mobile adjustments for Farcaster
+                    if(window.farcaster?.sdk) {
+                        try { await window.farcaster.sdk.actions.ready({ disableNativeGestures: true }); } catch(e){}
+                    }
+                    
+                    Visuals.init();
+                    AudioFX.init();
+                    await Wallet.init();
+                    History.init();
+                    HoldButton.init();
+                    RPCController.loadGlobalStats(); // Start Hydra
+                    
+                    // Event Listeners
+                    document.addEventListener('click', (e) => {
+                        if(!e.target.closest('.wallet-terminal')) document.getElementById('wallet-menu').classList.remove('visible');
+                    });
+                    
+                    // Hidden Debug
+                    let taps=0;
+                    document.getElementById('logo-tap').addEventListener('click', ()=>{ taps++; if(taps===3) document.getElementById('debug').style.display='block'; });
+
+                } catch(e) { Debug.log(e); }
+            },
+
+            async ignite() {
+                const input = document.getElementById('regret-input');
+                const text = input.value.trim();
+                
+                if(!text) { Toast.show("Input required", "⚠️"); return; }
+                if(!Wallet.isConnected) { Wallet.connect(); return; }
+
+                document.getElementById('ignite-text').innerText = "BURNING...";
+                
+                // Trigger Physics & Audio
+                document.getElementById('paper-wrapper').classList.add('burning');
+                Visuals.flare();
+                AudioFX.playBurn();
+                try { window.farcaster.sdk.actions.haptics.impactOccurred('heavy'); } catch(e){}
+
+                try {
+                    // Blockchain Write with Manual Gas Limit to ensure execution
+                    const contract = new ethers.Contract(CONFIG.contract, CONFIG.abi, Wallet.signer);
+                    const tx = await contract.burnRegret(text, { gasLimit: 300000 });
+                    Debug.log("Tx: " + tx.hash);
+                    
+                    // Wait for visual sync (2.2s for full paper burn animation)
+                    setTimeout(() => {
+                        this.showResult(text, tx.hash);
+                        // Save local backup immediately
+                        History.logLocal(text, tx.hash);
+                        RPCController.loadGlobalStats();
+                    }, 2200);
+
+                } catch(e) {
+                    console.error(e);
+                    document.getElementById('paper-wrapper').classList.remove('burning');
+                    HoldButton.reset();
+                    if(e.code === 4001) Toast.show("Cancelled", "❌");
+                    else if(e.message.includes("insufficient")) Toast.show("No ETH on Base", "💰");
+                    else Toast.show("Burn Failed", "⚠️");
+                }
+            },
+
+            showResult(text, hash) {
+                document.querySelectorAll('.view-page').forEach(p => p.classList.remove('active'));
+                document.getElementById('view-result').classList.add('active');
+                
+                document.getElementById('burned-display').innerText = `"${text}"`;
+                const link = document.getElementById('tx-link');
+                link.href = `https://basescan.org/tx/${hash}`;
+                
+                // Set active context for immediate sharing
+                Sharing.activeContext = { text, hash };
+
+                try { window.farcaster.sdk.actions.haptics.notificationOccurred('success'); } catch(e){}
+            },
+
+            reset() {
+                document.getElementById('regret-input').value = "";
+                document.getElementById('paper-wrapper').classList.remove('burning');
+                HoldButton.reset();
+                document.querySelectorAll('.view-page').forEach(p => p.classList.remove('active'));
+                document.getElementById('view-input').classList.add('active');
+            }
+        };
+
+        // --- HYDRA RPC CONTROLLER (Load Balancer) ---
+        const RPCController = {
+            async getProvider() {
+                // Try each RPC sequentially until one works
+                for(let url of CONFIG.rpcs) {
+                    try {
+                        const p = new ethers.providers.JsonRpcProvider(url);
+                        await p.getBlockNumber(); // Ping check
+                        return p;
+                    } catch(e) { console.warn("RPC Fail:", url); }
+                }
+                return null;
+            },
+
+            async loadGlobalStats() {
+                const el = document.getElementById('global-burns');
+                const provider = await this.getProvider();
+                if(!provider) { el.innerText = "NET_ERR"; return; }
+                
+                try {
+                    const c = new ethers.Contract(CONFIG.contract, CONFIG.abi, provider);
+                    const t = await c.totalBurns();
+                    el.innerText = t.toString();
+                } catch(e) { el.innerText = "SYNC..."; }
+            }
+        };
+
+        // --- HOLD BUTTON (MOBILE OPTIMIZED) ---
+        const HoldButton = {
+            el: document.getElementById('ignite-btn'),
+            fill: document.getElementById('ignite-fill'),
+            text: document.getElementById('ignite-text'),
+            timer: null, held: false, locked: false,
+
+            init() {
+                const start = (e) => {
+                    if(e.type==='touchstart') e.preventDefault();
+                    if(this.locked) return;
+                    this.held = true;
+                    this.el.classList.add('holding');
+                    this.fill.style.transition = 'width 1.2s linear';
+                    this.fill.style.width = '100%';
+                    // Simple haptic loop simulation
+                    if(navigator.vibrate) navigator.vibrate([10, 10, 10]); 
+                    this.timer = setTimeout(() => { this.locked = true; App.ignite(); }, 1200);
+                };
+                const stop = (e) => {
+                    if(e.type==='touchend') e.preventDefault();
+                    if(this.locked) return;
+                    this.held = false;
+                    this.el.classList.remove('holding');
+                    clearTimeout(this.timer);
+                    this.fill.style.transition = 'width 0.2s ease-out';
+                    this.fill.style.width = '0%';
+                };
+                this.el.addEventListener('mousedown', start);
+                this.el.addEventListener('touchstart', start, {passive:false});
+                this.el.addEventListener('mouseup', stop);
+                this.el.addEventListener('mouseleave', stop);
+                this.el.addEventListener('touchend', stop);
+            },
+            reset() {
+                this.locked=false; this.held=false;
+                this.el.classList.remove('holding');
+                this.fill.style.width='0%';
+                this.text.innerText = "HOLD TO BURN";
+            }
+        };
+
+        // --- WALLET MANAGER ---
+        const Wallet = {
+            provider: null, signer: null, address: null, contract: null, isConnected: false,
+
+            async init() {
+                if(window.ethereum?.selectedAddress) this.connect(true);
+                else if(window.farcaster?.sdk?.wallet) {
+                    const p = await window.farcaster.sdk.wallet.getEthereumProvider();
+                    if(p) this.connect(true);
+                }
+            },
+
+            async connect(silent = false) {
+                try {
+                    let raw;
+                    // Prefer Farcaster
+                    if(window.farcaster?.sdk?.wallet) raw = await window.farcaster.sdk.wallet.getEthereumProvider();
+                    // Fallback to Window
+                    if(!raw && window.ethereum) raw = window.ethereum;
+                    
+                    if(!raw) { if(!silent) alert("No wallet found. Use Warpcast."); return; }
+
+                    this.provider = new ethers.providers.Web3Provider(raw);
+                    if(!silent) await this.provider.send("eth_requestAccounts", []);
+                    
+                    try { await raw.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CONFIG.chainIdHex }] }); } catch(e){}
+
+                    this.signer = this.provider.getSigner();
+                    this.address = await this.signer.getAddress();
+                    this.isConnected = true;
+                    this.updateUI();
+                    if(!silent) Toast.show("Connected", "✅");
+                    History.initUser(); // Load my history
+
+                } catch(e) { Debug.log(e.message); }
+            },
+
+            disconnect() {
+                this.isConnected = false; this.address = null; this.updateUI();
+                document.getElementById('wallet-menu').classList.remove('visible');
+                History.clear();
+                Toast.show("Disconnected", "🔌");
+            },
+
+            updateUI() {
+                const s = document.getElementById('wallet-status-text');
+                const a = document.getElementById('wallet-addr-short');
+                
+                if(this.isConnected) {
+                    s.innerText = "ONLINE";
+                    s.className = "sys-val online";
+                    a.innerText = this.address.substring(0,6) + "...";
+                } else {
+                    s.innerText = "OFFLINE";
+                    s.className = "sys-val offline";
+                }
+            },
+
+            toggleDropdown() { if(!this.isConnected) this.connect(); else document.getElementById('wallet-menu').classList.toggle('visible'); },
+            copy() { navigator.clipboard.writeText(this.address); Toast.show("Copied", "📋"); }
+        };
+
+        // --- HISTORY (REAL INDEXER) ---
+        const History = {
+            mode: 'yours',
+            init() {},
+            
+            initUser() {
+                if(this.mode === 'yours') this.loadYours();
+            },
+
+            open() { document.getElementById('history-drawer').classList.add('open'); if(Wallet.isConnected) this.refresh(); },
+            close() { document.getElementById('history-drawer').classList.remove('open'); },
+            clear() { document.getElementById('history-content').innerHTML = '<div style="padding:40px;text-align:center;color:#444;font-family:var(--f-code);font-size:0.8rem;">Initialize connection.</div>'; },
+            
+            switch(mode, el) {
+                this.mode = mode;
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                el.classList.add('active');
+                this.refresh();
+            },
+
+            refresh() {
+                if(this.mode === 'yours') this.loadYours();
+                else this.loadGlobal();
+            },
+
+            logLocal(text, hash) {
+                if(!Wallet.address) return;
+                const k = `b_${Wallet.address}`;
+                const d = JSON.parse(localStorage.getItem(k) || "[]");
+                d.unshift({t:text, h:hash, d:Date.now()});
+                localStorage.setItem(k, JSON.stringify(d));
+            },
+
+            // Load Yours: Local + Real Chain Verification
+            async loadYours() {
+                if(!Wallet.isConnected) return;
+                const list = document.getElementById('history-content');
+                list.innerHTML = '<div style="padding:20px;text-align:center;color:#555;font-family:var(--f-code);">Scanning...</div>';
+                
+                const k = `b_${Wallet.address}`;
+                const local = JSON.parse(localStorage.getItem(k) || "[]");
+                
+                try {
+                    // Use a sturdy RPC to avoid filters failing
+                    const p = await RPCController.getProvider();
+                    const c = new ethers.Contract(CONFIG.contract, CONFIG.abi, p);
+                    
+                    const block = await p.getBlockNumber();
+                    // Scan last 50k blocks for MY address
+                    const filter = c.filters.Burned(Wallet.address);
+                    const logs = await c.queryFilter(filter, block - 50000, 'latest');
+                    
+                    const chainItems = logs.map(l => {
+                        const parsed = c.interface.parseLog(l);
+                        return { t: parsed.args.regret, h: l.transactionHash, d: Date.now() // Timestamp approximate for UI 
+                        };
+                    });
+
+                    const merged = [...chainItems.reverse()]; 
+                    // Fallback to local if chain indexer empty (common on free RPCs due to log limits)
+                    if(merged.length === 0 && local.length > 0) {
+                        this.draw(local);
+                    } else if (merged.length > 0) {
+                        this.draw(merged);
+                    } else {
+                        list.innerHTML = '<div style="padding:40px;text-align:center;color:#555;font-family:var(--f-code);">No burns found.</div>';
+                    }
+
+                } catch(e) {
+                    console.warn("Indexer failed, using local", e);
+                    if(local.length > 0) this.draw(local);
+                    else list.innerHTML = '<div style="padding:40px;text-align:center;color:#555;font-family:var(--f-code);">Network Busy.</div>';
+                }
+            },
+
+            // Load Global: Recent events via Hydra RPC
+            async loadGlobal() {
+                const list = document.getElementById('history-content');
+                list.innerHTML = '<div style="padding:20px;text-align:center;color:#555;font-family:var(--f-code);">Scanning network...</div>';
+                try {
+                    const p = await RPCController.getProvider();
+                    if(!p) throw new Error("No RPC");
+                    const c = new ethers.Contract(CONFIG.contract, CONFIG.abi, p);
+                    const b = await p.getBlockNumber();
+                    // Small range (2000 blocks) prevents RPC timeouts
+                    const logs = await c.queryFilter(c.filters.Burned(), b - 2000, 'latest');
+                    const items = logs.reverse().map(l => ({ t: c.interface.parseLog(l).args.regret, h: l.transactionHash, d: Date.now() }));
+                    
+                    if(items.length>0) this.draw(items);
+                    else list.innerHTML='<div style="padding:40px;text-align:center;color:#555;font-family:var(--f-code);">No recent signals.</div>';
+                } catch(e) { list.innerHTML='<div style="padding:40px;text-align:center;color:#555;font-family:var(--f-code);">Network Busy.</div>'; }
+            },
+
+            draw(items) {
+                const list = document.getElementById('history-content'); list.innerHTML='';
+                items.forEach(i => {
+                    const el = document.createElement('div'); el.className = 'log-item';
+                    
+                    // Escape quotes for safety in onclick
+                    const safeText = i.t.replace(/"/g, '&quot;').replace(/'/g, "&#39;");
+                    
+                    el.innerHTML = `
+                        <div class="log-text">"${i.t}"</div>
+                        <div class="log-meta">
+                            <span>BASE CHAIN</span>
+                            <div style="display:flex; gap:10px; align-items:center;">
+                                <button class="log-share-btn" onclick="Sharing.share('${safeText}')">SHARE</button>
+                                <a href="https://basescan.org/tx/${i.h}" target="_blank" class="log-link">TX ↗</a>
+                            </div>
+                        </div>
+                    `;
+                    list.appendChild(el);
+                });
+            }
+        };
+
+        // --- SHARING (AUTO OPTIMIZED TYPOGRAPHY) ---
+        const Sharing = {
+            activeContext: null,
+
+            // Share can be called from history (text only) or active context (text + hash)
+            async share(historyText = null) {
+                let t = historyText;
+                let h = null;
+
+                // Use active context if available and no history text provided
+                if(!t && this.activeContext) {
+                    t = this.activeContext.text;
+                    h = this.activeContext.hash;
+                }
+                
+                // Clean up quotes
+                if(t) t = t.replace(/"/g,'');
+                if(!t) return;
+                
+                // Farcaster Native Sharing
+                if(window.farcaster?.sdk) {
+                    window.farcaster.sdk.actions.composeCast({
+                        text: `I just burned "${t}" on-chain in the Digital Bonfire.\n\nLeaving it in 2025. 🔥`,
+                        embeds: ["https://farcaster.xyz"] 
+                    });
+                    return;
+                }
+
+                // Browser Sharing (Generate Image)
+                Toast.show("Minting Proof...", "🖼️");
+                
+                // Ensure canvas exists
+                const c = document.getElementById('share-canvas');
+                if(!c) { console.error("Canvas missing"); return; }
+                const x = c.getContext('2d');
+                
+                // 1. Background (Solid Black)
+                x.fillStyle='#000000'; x.fillRect(0,0,1200,630);
+                
+                // 2. Gold/Fire Border
+                const g=x.createLinearGradient(0,0,1200,630); 
+                g.addColorStop(0,'#ff4500'); g.addColorStop(0.5, '#ffae00'); g.addColorStop(1,'#000');
+                x.lineWidth=30; x.strokeStyle=g; x.strokeRect(0,0,1200,630);
+                
+                // 3. Header "PROOF OF CATHARSIS"
+                x.font = 'bold 50px "Courier New", monospace'; 
+                x.fillStyle = '#ff4500'; x.textAlign = 'center';
+                x.fillText('PROOF OF CATHARSIS', 600, 100);
+                
+                x.font = '30px "Courier New", monospace'; x.fillStyle = '#888';
+                x.fillText('RECORDED ON BASE BLOCKCHAIN', 600, 160);
+
+                // 4. The Regret Text (AUTO-SCALING)
+                x.fillStyle='#ffffff'; x.textAlign='center';
+                
+                let fontSize = 90;
+                let lineHeight = 100;
+                
+                // Optimize font size based on length
+                if(t.length > 20) { fontSize = 70; lineHeight = 80; }
+                if(t.length > 50) { fontSize = 50; lineHeight = 60; }
+                if(t.length > 100) { fontSize = 40; lineHeight = 50; }
+                
+                x.font = `bold ${fontSize}px serif`;
+                this.wrap(x,`"${t}"`, 600, 350, 1000, lineHeight);
+                
+                // 5. Footer Metadata
+                x.font = '30px "Courier New", monospace'; x.fillStyle = '#888'; x.textAlign='left';
+                const addr = Wallet.isConnected ? Wallet.address : "0x...ANON";
+                x.fillText(`BURNED BY: ${addr.substring(0,8)}...`, 60, 580);
+                x.fillText(`DATE: ${new Date().toLocaleDateString()}`, 60, 540);
+                
+                // Branding
+                x.textAlign='right'; x.fillStyle='#ff4500';
+                x.fillText('THE DIGITAL BONFIRE', 1140, 580);
+
+                // Ensure modal elements exist
+                const img = document.getElementById('share-img');
+                const modal = document.getElementById('share-modal');
+                if(img && modal) {
+                    img.src = c.toDataURL();
+                    modal.style.display='flex';
+                }
+            },
+            
+            // Text Wrap Logic
+            wrap(ctx, text, x, y, maxWidth, lineHeight) {
+                let words = text.split(' '), line = '', lines = [];
+                for(let n=0; n<words.length; n++) {
+                    let testLine = line + words[n] + ' ';
+                    let metrics = ctx.measureText(testLine);
+                    if(metrics.width > maxWidth && n > 0) { lines.push(line); line = words[n] + ' '; }
+                    else { line = testLine; }
+                }
+                lines.push(line);
+                
+                // Vertically center
+                let startY = y - ((lines.length - 1) * lineHeight) / 2;
+                lines.forEach((l,i) => ctx.fillText(l, x, startY + (i*lineHeight)));
+            }
+        };
+
+        // --- VISUALS & AUDIO ---
+        // FIX: Ensure elements exist before setting props
+        const Toast = {
+            show(msg, icon) {
+                const t = document.getElementById('toast');
+                const tMsg = document.getElementById('t-msg');
+                const tIcon = document.getElementById('t-icon');
+                if(tMsg) tMsg.innerText = msg;
+                if(tIcon && icon) tIcon.innerText = icon;
+                if(t) {
+                    t.classList.add('visible');
+                    setTimeout(() => t.classList.remove('visible'), 3000);
+                }
+            }
+        };
+
+        const Debug={log(m){const d=document.getElementById('debug');const l=document.createElement('div');l.innerText=`> ${m}`;d.prepend(l);console.log(m);}};
+        
+        const Visuals={
+            c:document.getElementById('canvas-fire').getContext('2d'), a:document.getElementById('canvas-ash').getContext('2d'), p:[], h:0, w:0,
+            init(){this.resize(); window.addEventListener('resize',()=>this.resize()); this.loop();},
+            resize(){this.w=window.innerWidth;this.h=window.innerHeight;this.c.canvas.width=this.a.canvas.width=this.w;this.c.canvas.height=this.a.canvas.height=this.h;},
+            flare(){for(let i=0;i<60;i++)this.p.push({x:this.w/2+(Math.random()-.5)*100,y:this.h,vx:(Math.random()-.5)*2,vy:Math.random()*5+5,l:100,h:Math.random()*40+10,s:Math.random()*6+2});},
+            loop(){
+                this.c.clearRect(0,0,this.w,this.h); this.c.globalCompositeOperation='lighter';
+                if(this.p.length<100)this.p.push({x:this.w/2+(Math.random()-.5)*60,y:this.h,vx:(Math.random()-.5),vy:Math.random()*3+2,l:80,h:Math.random()*30+10,s:Math.random()*4+1});
+                for(let i=this.p.length-1;i>=0;i--){let o=this.p[i];o.x+=o.vx;o.y-=o.vy;o.l--;o.s*=.98;let g=this.c.createRadialGradient(o.x,o.y,0,o.x,o.y,o.s*2);g.addColorStop(0,`hsla(${o.h},100%,60%,${o.l/100})`);g.addColorStop(1,"transparent");this.c.fillStyle=g;this.c.beginPath();this.c.arc(o.x,o.y,o.s*2,0,Math.PI*2);this.c.fill();if(o.l<=0)this.p.splice(i,1);}
+                requestAnimationFrame(()=>this.loop());
+            }
+        };
+
+        const AudioFX = {
+            ctx: null, init() { try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){} },
+            playBurn() {
+                if(!this.ctx) return;
+                const osc=this.ctx.createOscillator(); const g=this.ctx.createGain();
+                osc.connect(g); g.connect(this.ctx.destination);
+                osc.frequency.setValueAtTime(100,this.ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(10,this.ctx.currentTime+1);
+                g.gain.setValueAtTime(0.5,this.ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,this.ctx.currentTime+1);
+                osc.start(); osc.stop(this.ctx.currentTime+1);
+            }
+        };
+
+        // Chat
+        let cI=false;
+        window.openOnChat=()=>{document.getElementById('onchat-overlay').style.display='block';if(!cI&&window.OnChat){OnChat.mount("#onchat-widget",{theme:"dark",hideMobileTabs:true});cI=true;}};
+        window.closeOnChat=()=>{document.getElementById('onchat-overlay').style.display='none';};
+
+        window.onload = App.init;
+    </script>
+</body>
+</html>
