@@ -22,23 +22,6 @@
     
     <script src="https://onchat.sebayaki.com/widget.js"></script>
 
-    <script type="module">
-        // This block runs immediately to satisfy the Splash Screen requirement
-        try {
-            const { sdk } = await import('https://esm.sh/@farcaster/miniapp-sdk@0.0.61');
-            window.sdk = sdk; // Make global for other scripts
-            
-            // CRITICAL: Signal ready immediately
-            await sdk.actions.ready({ disableNativeGestures: true });
-            console.log('✅ Farcaster SDK: Ready Signal Sent');
-            
-            // Optional: Haptic to confirm load
-            try { sdk.actions.haptics.notificationOccurred('success'); } catch(e){}
-        } catch (error) {
-            console.error('❌ Farcaster SDK Init Failed:', error);
-        }
-    </script>
-
     <style>
         :root {
             /* Palette: Volcanic Glass */
@@ -183,8 +166,9 @@
         }
         
         .paper-input-wrapper {
-            width: 100%; background: #e3dcd2;
-            padding: 4px; box-shadow: 0 30px 80px rgba(0,0,0,0.8);
+            width: 100%; background: #e3dcd2; /* Parchment Color */
+            padding: 4px; /* Border thickness */
+            box-shadow: 0 30px 80px rgba(0,0,0,0.8);
             transform-origin: center bottom;
             transition: transform 0.8s ease-in-out, opacity 0.8s, filter 0.8s;
             position: relative;
@@ -197,6 +181,7 @@
             border: 1px solid #c0b090;
         }
 
+        /* Burning State Animation */
         .paper-input-wrapper.burning {
             animation: paperBurnSequence 2.2s forwards cubic-bezier(0.6, 0.04, 0.98, 0.335);
         }
@@ -209,6 +194,7 @@
             100% { transform: scale(0) rotate(15deg) translateY(-100px); opacity: 0; }
         }
 
+        /* Input Styling */
         textarea#regret-input {
             width: 100%; background: transparent; border: none; resize: none;
             font-family: var(--f-head); font-size: 1.6rem; font-weight: 700; color: #1a1a1a;
@@ -357,19 +343,11 @@
         
         <div class="hud-bar">
             <div class="icon-btn" onclick="History.open()">📜</div>
-            
             <div style="position: relative;">
                 <div class="wallet-terminal" onclick="Wallet.toggleDropdown()">
-                    <div class="sys-row">
-                        <span>NET:</span>
-                        <span class="sys-val online">BASE</span>
-                    </div>
-                    <div class="sys-row">
-                        <span>STS:</span>
-                        <span id="wallet-status-text" class="sys-val offline">CONNECT_REQ</span>
-                    </div>
+                    <div class="sys-row"><span>NET:</span><span class="sys-val online">BASE</span></div>
+                    <div class="sys-row"><span>STS:</span><span id="wallet-status-text" class="sys-val offline">CONNECT_REQ</span></div>
                 </div>
-                
                 <div id="wallet-menu">
                     <button class="menu-opt" onclick="Wallet.copy()"><span>ID:</span> <span id="wallet-addr-short">...</span></button>
                     <button class="menu-opt danger" onclick="Wallet.disconnect()"><span>>></span> TERMINATE</button>
@@ -378,10 +356,8 @@
         </div>
 
         <div class="view-container">
-            
             <div id="view-input" class="view-page active">
                 <h1 class="logo" id="logo-tap">The<br>Bonfire<span>PROTOCOL 2025</span></h1>
-                
                 <div class="burn-stage">
                     <div id="paper-wrapper" class="paper-input-wrapper">
                         <div class="paper-inner">
@@ -389,16 +365,11 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="ignite-wrapper" id="ignite-btn">
                     <div class="ignite-fill" id="ignite-fill"></div>
                     <div class="ignite-label" id="ignite-text">HOLD TO BURN</div>
                 </div>
-
-                <div class="stats-ticker">
-                    <span>GLOBAL_ASHES:</span>
-                    <span id="global-burns" style="color:#fff">Loading...</span>
-                </div>
+                <div class="stats-ticker"><span>GLOBAL_ASHES:</span><span id="global-burns" style="color:#fff">Loading...</span></div>
             </div>
 
             <div id="view-result" class="view-page">
@@ -412,7 +383,6 @@
                     <button class="btn-ghost" onclick="App.reset()">Burn Again</button>
                 </div>
             </div>
-
         </div>
     </div>
 
@@ -429,6 +399,7 @@
     </div>
 
     <canvas id="share-canvas" width="1200" height="630"></canvas>
+    
     <div id="share-modal">
         <img id="share-img">
         <p style="color:#888; font-family:var(--f-code); font-size:0.7rem; margin-top:20px;">LONG PRESS TO SAVE IMAGE</p>
@@ -436,8 +407,7 @@
     </div>
 
     <div id="toast">
-        <span id="t-icon">🔥</span>
-        <span id="t-msg">Notification</span>
+        <span id="t-icon">🔥</span><span id="t-msg">Notification</span>
     </div>
     
     <div id="chat-btn" onclick="openOnChat()">💬</div>
@@ -448,106 +418,70 @@
     
     <div id="debug"></div>
 
-    <script>
+    <script type="module">
+        // 1. BOOT FARCASTER SDK IMMEDIATELY
+        async function bootFarcaster() {
+            try {
+                const { sdk } = await import('https://esm.sh/@farcaster/miniapp-sdk@0.0.61');
+                window.sdk = sdk;
+                await sdk.actions.ready({ disableNativeGestures: true });
+                console.log('✅ SDK READY');
+            } catch (e) {
+                console.error('❌ SDK FAIL:', e);
+            }
+        }
+        // Run immediately
+        bootFarcaster();
+
+        // 2. APP LOGIC
         const CONFIG = {
             contract: "0x4d52d8618C7BE987621766aE1578cb3701a1209c",
-            chainIdHex: "0x2105", // Base Mainnet (8453)
-            // Multi-RPC Load Balancer List
-            rpcs: [
-                'https://mainnet.base.org',
-                'https://base.gateway.tenderly.co',
-                'https://base-rpc.publicnode.com',
-                'https://1rpc.io/base',
-                'https://base.publicnode.com'
-            ],
-            abi: [
-                "function burnRegret(string memory regret) public",
-                "function totalBurns() view returns (uint256)",
-                "event Burned(address indexed user, string regret, uint256 timestamp)"
-            ]
+            chainIdHex: "0x2105", 
+            rpcs: ['https://mainnet.base.org', 'https://base.gateway.tenderly.co', 'https://base-rpc.publicnode.com', 'https://1rpc.io/base', 'https://base.publicnode.com'],
+            abi: ["function burnRegret(string memory regret) public", "function totalBurns() view returns (uint256)", "event Burned(address indexed user, string regret, uint256 timestamp)"]
         };
 
-        // --- APP CONTROLLER ---
         const App = {
             async init() {
                 try {
-                    // Mobile adjustments for Farcaster
-                    if(window.sdk) {
-                        try { await window.sdk.actions.ready({ disableNativeGestures: true }); } catch(e){}
-                    }
-                    
-                    Visuals.init();
-                    AudioFX.init();
-                    await Wallet.init();
-                    History.init();
-                    HoldButton.init();
-                    RPCController.loadGlobalStats(); // Start Hydra
-                    
-                    // Event Listeners
-                    document.addEventListener('click', (e) => {
-                        if(!e.target.closest('.wallet-terminal')) document.getElementById('wallet-menu').classList.remove('visible');
-                    });
-                    
-                    // Hidden Debug
-                    let taps=0;
-                    document.getElementById('logo-tap').addEventListener('click', ()=>{ taps++; if(taps===3) document.getElementById('debug').style.display='block'; });
-
-                } catch(e) { Debug.log(e); }
+                    Visuals.init(); AudioFX.init();
+                    await Wallet.init(); History.init(); HoldButton.init(); RPCController.loadGlobalStats();
+                    document.addEventListener('click', (e) => { if(!e.target.closest('.wallet-terminal')) document.getElementById('wallet-menu').classList.remove('visible'); });
+                    let taps=0; document.getElementById('logo-tap').addEventListener('click', ()=>{ taps++; if(taps===3) document.getElementById('debug').style.display='block'; });
+                } catch(e) { console.log(e); }
             },
-
             async ignite() {
                 const input = document.getElementById('regret-input');
                 const text = input.value.trim();
-                
                 if(!text) { Toast.show("Input required", "⚠️"); return; }
                 if(!Wallet.isConnected) { Wallet.connect(); return; }
-
                 document.getElementById('ignite-text').innerText = "BURNING...";
-                
-                // Trigger Physics & Audio
                 document.getElementById('paper-wrapper').classList.add('burning');
-                Visuals.flare();
-                AudioFX.playBurn();
-                try { window.sdk.actions.haptics.impactOccurred('heavy'); } catch(e){}
-
+                Visuals.flare(); AudioFX.playBurn();
+                try { window.sdk?.actions.haptics.impactOccurred('heavy'); } catch(e){}
                 try {
-                    // Blockchain Write with Manual Gas Limit to ensure execution
                     const contract = new ethers.Contract(CONFIG.contract, CONFIG.abi, Wallet.signer);
                     const tx = await contract.burnRegret(text, { gasLimit: 300000 });
-                    Debug.log("Tx: " + tx.hash);
-                    
-                    // Wait for visual sync (2.2s for full paper burn animation)
                     setTimeout(() => {
                         this.showResult(text, tx.hash);
-                        // Save local backup immediately
                         History.logLocal(text, tx.hash);
                         RPCController.loadGlobalStats();
                     }, 2200);
-
                 } catch(e) {
                     console.error(e);
                     document.getElementById('paper-wrapper').classList.remove('burning');
                     HoldButton.reset();
-                    if(e.code === 4001) Toast.show("Cancelled", "❌");
-                    else if(e.message.includes("insufficient")) Toast.show("No ETH on Base", "💰");
-                    else Toast.show("Burn Failed", "⚠️");
+                    if(e.code === 4001) Toast.show("Cancelled", "❌"); else Toast.show("Burn Failed", "⚠️");
                 }
             },
-
             showResult(text, hash) {
                 document.querySelectorAll('.view-page').forEach(p => p.classList.remove('active'));
                 document.getElementById('view-result').classList.add('active');
-                
                 document.getElementById('burned-display').innerText = `"${text}"`;
-                const link = document.getElementById('tx-link');
-                link.href = `https://basescan.org/tx/${hash}`;
-                
-                // Set active context for immediate sharing
+                document.getElementById('tx-link').href = `https://basescan.org/tx/${hash}`;
                 Sharing.activeContext = { text, hash };
-
-                try { window.sdk.actions.haptics.notificationOccurred('success'); } catch(e){}
+                try { window.sdk?.actions.haptics.notificationOccurred('success'); } catch(e){}
             },
-
             reset() {
                 document.getElementById('regret-input').value = "";
                 document.getElementById('paper-wrapper').classList.remove('burning');
@@ -557,272 +491,98 @@
             }
         };
 
-        // --- HYDRA RPC CONTROLLER (Load Balancer) ---
         const RPCController = {
-            async getProvider() {
-                // Try each RPC sequentially until one works
-                for(let url of CONFIG.rpcs) {
-                    try {
-                        const p = new ethers.providers.JsonRpcProvider(url);
-                        await p.getBlockNumber(); // Ping check
-                        return p;
-                    } catch(e) { console.warn("RPC Fail:", url); }
-                }
-                return null;
-            },
-
+            async getProvider() { for(let url of CONFIG.rpcs) { try { const p = new ethers.providers.JsonRpcProvider(url); await p.getBlockNumber(); return p; } catch(e) { console.warn("RPC Fail:", url); } } return null; },
             async loadGlobalStats() {
                 const el = document.getElementById('global-burns');
                 const provider = await this.getProvider();
                 if(!provider) { el.innerText = "NET_ERR"; return; }
-                
-                try {
-                    const c = new ethers.Contract(CONFIG.contract, CONFIG.abi, provider);
-                    const t = await c.totalBurns();
-                    el.innerText = t.toString();
-                } catch(e) { el.innerText = "SYNC..."; }
+                try { const c = new ethers.Contract(CONFIG.contract, CONFIG.abi, provider); const t = await c.totalBurns(); el.innerText = t.toString(); } catch(e) { el.innerText = "SYNC..."; }
             }
         };
 
-        // --- HOLD BUTTON (MOBILE OPTIMIZED) ---
         const HoldButton = {
-            el: document.getElementById('ignite-btn'),
-            fill: document.getElementById('ignite-fill'),
-            text: document.getElementById('ignite-text'),
-            timer: null, held: false, locked: false,
-
+            el: document.getElementById('ignite-btn'), fill: document.getElementById('ignite-fill'), text: document.getElementById('ignite-text'), timer: null, held: false, locked: false,
             init() {
-                const start = (e) => {
-                    if(e.type==='touchstart') e.preventDefault();
-                    if(this.locked) return;
-                    this.held = true;
-                    this.el.classList.add('holding');
-                    this.fill.style.transition = 'width 1.2s linear';
-                    this.fill.style.width = '100%';
-                    // Simple haptic loop simulation
-                    if(navigator.vibrate) navigator.vibrate([10, 10, 10]); 
-                    this.timer = setTimeout(() => { this.locked = true; App.ignite(); }, 1200);
-                };
-                const stop = (e) => {
-                    if(e.type==='touchend') e.preventDefault();
-                    if(this.locked) return;
-                    this.held = false;
-                    this.el.classList.remove('holding');
-                    clearTimeout(this.timer);
-                    this.fill.style.transition = 'width 0.2s ease-out';
-                    this.fill.style.width = '0%';
-                };
-                this.el.addEventListener('mousedown', start);
-                this.el.addEventListener('touchstart', start, {passive:false});
-                this.el.addEventListener('mouseup', stop);
-                this.el.addEventListener('mouseleave', stop);
-                this.el.addEventListener('touchend', stop);
+                const start = (e) => { if(e.type==='touchstart') e.preventDefault(); if(this.locked) return; this.held=true; this.el.classList.add('holding'); this.fill.style.transition='width 1.2s linear'; this.fill.style.width='100%'; if(navigator.vibrate) navigator.vibrate([10,10,10]); this.timer=setTimeout(()=>{this.locked=true; App.ignite();},1200); };
+                const stop = (e) => { if(e.type==='touchend') e.preventDefault(); if(this.locked) return; this.held=false; this.el.classList.remove('holding'); clearTimeout(this.timer); this.fill.style.transition='width 0.2s ease-out'; this.fill.style.width='0%'; };
+                this.el.addEventListener('mousedown', start); this.el.addEventListener('touchstart', start, {passive:false});
+                this.el.addEventListener('mouseup', stop); this.el.addEventListener('mouseleave', stop); this.el.addEventListener('touchend', stop);
             },
-            reset() {
-                this.locked=false; this.held=false;
-                this.el.classList.remove('holding');
-                this.fill.style.width='0%';
-                this.text.innerText = "HOLD TO BURN";
-            }
+            reset() { this.locked=false; this.held=false; this.el.classList.remove('holding'); this.fill.style.width='0%'; this.text.innerText = "HOLD TO BURN"; }
         };
 
-        // --- WALLET MANAGER ---
         const Wallet = {
-            provider: null, signer: null, address: null, contract: null, isConnected: false,
-
-            async init() {
-                if(window.ethereum?.selectedAddress) this.connect(true);
-                else if(window.sdk?.wallet) {
-                    const p = await window.sdk.wallet.getEthereumProvider();
-                    if(p) this.connect(true);
-                }
-            },
-
-            async connect(silent = false) {
+            provider: null, signer: null, address: null, isConnected: false,
+            async init() { if(window.ethereum?.selectedAddress || window.sdk?.wallet) this.connect(true); },
+            async connect(silent=false) {
                 try {
-                    let raw;
-                    // Prefer Farcaster
-                    if(window.sdk?.wallet) raw = await window.sdk.wallet.getEthereumProvider();
-                    // Fallback to Window
-                    if(!raw && window.ethereum) raw = window.ethereum;
-                    
-                    if(!raw) { if(!silent) alert("No wallet found. Use Warpcast."); return; }
-
+                    let raw; if(window.sdk?.wallet) raw = await window.sdk.wallet.getEthereumProvider(); if(!raw && window.ethereum) raw = window.ethereum;
+                    if(!raw) { if(!silent) alert("No wallet found."); return; }
                     this.provider = new ethers.providers.Web3Provider(raw);
                     if(!silent) await this.provider.send("eth_requestAccounts", []);
-                    
                     try { await raw.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CONFIG.chainIdHex }] }); } catch(e){}
-
-                    this.signer = this.provider.getSigner();
-                    this.address = await this.signer.getAddress();
-                    this.isConnected = true;
-                    this.updateUI();
-                    if(!silent) Toast.show("Connected", "✅");
-                    History.initUser(); // Load my history
-
-                } catch(e) { Debug.log(e.message); }
+                    this.signer = this.provider.getSigner(); this.address = await this.signer.getAddress();
+                    this.isConnected = true; this.updateUI(); if(!silent) Toast.show("Connected", "✅"); History.initUser();
+                } catch(e) { console.log(e.message); }
             },
-
-            disconnect() {
-                this.isConnected = false; this.address = null; this.updateUI();
-                document.getElementById('wallet-menu').classList.remove('visible');
-                History.clear();
-                Toast.show("Disconnected", "🔌");
-            },
-
+            disconnect() { this.isConnected=false; this.address=null; this.updateUI(); document.getElementById('wallet-menu').classList.remove('visible'); History.clear(); Toast.show("Disconnected", "🔌"); },
             updateUI() {
-                const s = document.getElementById('wallet-status-text');
-                const a = document.getElementById('wallet-addr-short');
-                
-                if(this.isConnected) {
-                    s.innerText = "ONLINE";
-                    s.className = "sys-val online";
-                    a.innerText = this.address.substring(0,6) + "...";
-                } else {
-                    s.innerText = "OFFLINE";
-                    s.className = "sys-val offline";
-                }
+                const s = document.getElementById('wallet-status-text'); const a = document.getElementById('wallet-addr-short');
+                if(this.isConnected) { s.innerText="ONLINE"; s.className="sys-val online"; a.innerText=this.address.substring(0,6)+"..."; }
+                else { s.innerText="OFFLINE"; s.className="sys-val offline"; }
             },
-
             toggleDropdown() { if(!this.isConnected) this.connect(); else document.getElementById('wallet-menu').classList.toggle('visible'); },
             copy() { navigator.clipboard.writeText(this.address); Toast.show("Copied", "📋"); }
         };
 
-        // --- HISTORY (REAL INDEXER) ---
         const History = {
-            mode: 'yours',
-            init() {},
-            
-            initUser() {
-                if(this.mode === 'yours') this.loadYours();
-            },
-
+            mode: 'yours', init() {}, initUser() { if(this.mode==='yours') this.loadYours(); },
             open() { document.getElementById('history-drawer').classList.add('open'); if(Wallet.isConnected) this.refresh(); },
             close() { document.getElementById('history-drawer').classList.remove('open'); },
-            clear() { document.getElementById('history-content').innerHTML = '<div style="padding:40px;text-align:center;color:#444;font-family:var(--f-code);font-size:0.8rem;">Initialize connection.</div>'; },
-            
-            switch(mode, el) {
-                this.mode = mode;
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                el.classList.add('active');
-                this.refresh();
-            },
-
-            refresh() {
-                if(this.mode === 'yours') this.loadYours();
-                else this.loadGlobal();
-            },
-
-            logLocal(text, hash) {
-                if(!Wallet.address) return;
-                const k = `b_${Wallet.address}`;
-                const d = JSON.parse(localStorage.getItem(k) || "[]");
-                d.unshift({t:text, h:hash, d:Date.now()});
-                localStorage.setItem(k, JSON.stringify(d));
-            },
-
-            // Load Yours: Local + Real Chain Verification
+            clear() { document.getElementById('history-content').innerHTML='<div style="padding:40px;text-align:center;color:#444;font-family:var(--f-code);font-size:0.8rem;">Initialize connection.</div>'; },
+            switch(mode, el) { this.mode=mode; document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); this.refresh(); },
+            refresh() { if(this.mode==='yours') this.loadYours(); else this.loadGlobal(); },
+            logLocal(text, hash) { if(!Wallet.address) return; const k=`b_${Wallet.address}`; const d=JSON.parse(localStorage.getItem(k)||"[]"); d.unshift({t:text,h:hash,d:Date.now()}); localStorage.setItem(k,JSON.stringify(d)); },
             async loadYours() {
                 if(!Wallet.isConnected) return;
-                const list = document.getElementById('history-content');
-                list.innerHTML = '<div style="padding:20px;text-align:center;color:#555;font-family:var(--f-code);">Scanning...</div>';
-                
-                const k = `b_${Wallet.address}`;
-                const local = JSON.parse(localStorage.getItem(k) || "[]");
-                
+                const list=document.getElementById('history-content'); list.innerHTML='<div style="padding:20px;text-align:center;color:#555;font-family:var(--f-code);">Scanning...</div>';
+                const k=`b_${Wallet.address}`; const local=JSON.parse(localStorage.getItem(k)||"[]");
                 try {
-                    // Use a sturdy RPC to avoid filters failing
-                    const p = await RPCController.getProvider();
-                    const c = new ethers.Contract(CONFIG.contract, CONFIG.abi, p);
-                    
-                    const block = await p.getBlockNumber();
-                    // Scan last 50k blocks for MY address
-                    const filter = c.filters.Burned(Wallet.address);
-                    const logs = await c.queryFilter(filter, block - 50000, 'latest');
-                    
-                    const chainItems = logs.map(l => {
-                        const parsed = c.interface.parseLog(l);
-                        return { t: parsed.args.regret, h: l.transactionHash, d: Date.now() };
-                    });
-
-                    const merged = [...chainItems.reverse()]; 
-                    // Fallback to local if chain indexer empty (common on free RPCs due to log limits)
-                    if(merged.length === 0 && local.length > 0) {
-                        this.draw(local);
-                    } else if (merged.length > 0) {
-                        this.draw(merged);
-                    } else {
-                        list.innerHTML = '<div style="padding:40px;text-align:center;color:#555;font-family:var(--f-code);">No burns found.</div>';
-                    }
-
-                } catch(e) {
-                    console.warn("Indexer failed, using local", e);
-                    if(local.length > 0) this.draw(local);
-                    else list.innerHTML = '<div style="padding:40px;text-align:center;color:#555;font-family:var(--f-code);">Network Busy.</div>';
-                }
+                    const p=await RPCController.getProvider(); const c=new ethers.Contract(CONFIG.contract, CONFIG.abi, p); const block=await p.getBlockNumber();
+                    const logs=await c.queryFilter(c.filters.Burned(Wallet.address), block-50000, 'latest');
+                    const items=logs.reverse().map(l=>({t:c.interface.parseLog(l).args.regret, h:l.transactionHash, d:Date.now()}));
+                    if(items.length>0) this.draw(items); else if(local.length>0) this.draw(local); else list.innerHTML='<div style="padding:40px;text-align:center;color:#555;font-family:var(--f-code);">No personal history.</div>';
+                } catch(e) { if(local.length>0) this.draw(local); else list.innerHTML='<div style="padding:40px;text-align:center;color:#555;font-family:var(--f-code);">Network Busy.</div>'; }
             },
-
-            // Load Global: Recent events via Hydra RPC
             async loadGlobal() {
-                const list = document.getElementById('history-content');
-                list.innerHTML = '<div style="padding:20px;text-align:center;color:#555;font-family:var(--f-code);">Scanning network...</div>';
+                const list=document.getElementById('history-content'); list.innerHTML='<div style="padding:20px;text-align:center;color:#555;font-family:var(--f-code);">Scanning...</div>';
                 try {
-                    const p = await RPCController.getProvider();
-                    if(!p) throw new Error("No RPC");
-                    const c = new ethers.Contract(CONFIG.contract, CONFIG.abi, p);
-                    const b = await p.getBlockNumber();
-                    // Small range (2000 blocks) prevents RPC timeouts
-                    const logs = await c.queryFilter(c.filters.Burned(), b - 2000, 'latest');
-                    const items = logs.reverse().map(l => ({ t: c.interface.parseLog(l).args.regret, h: l.transactionHash, d: Date.now() }));
-                    
-                    if(items.length>0) this.draw(items);
-                    else list.innerHTML='<div style="padding:40px;text-align:center;color:#555;font-family:var(--f-code);">No recent signals.</div>';
+                    const p=await RPCController.getProvider(); const c=new ethers.Contract(CONFIG.contract, CONFIG.abi, p); const b=await p.getBlockNumber();
+                    const logs=await c.queryFilter(c.filters.Burned(), b-2000, 'latest');
+                    const items=logs.reverse().map(l=>({t:c.interface.parseLog(l).args.regret, h:l.transactionHash, d:Date.now()}));
+                    if(items.length>0) this.draw(items); else list.innerHTML='<div style="padding:40px;text-align:center;color:#555;font-family:var(--f-code);">No recent burns.</div>';
                 } catch(e) { list.innerHTML='<div style="padding:40px;text-align:center;color:#555;font-family:var(--f-code);">Network Busy.</div>'; }
             },
-
             draw(items) {
-                const list = document.getElementById('history-content'); list.innerHTML='';
+                const list=document.getElementById('history-content'); list.innerHTML='';
                 items.forEach(i => {
-                    const el = document.createElement('div'); el.className = 'log-item';
-                    
-                    // Share button for history items (escapes quotes)
+                    const el=document.createElement('div'); el.className='log-item';
                     const safeText = i.t.replace(/"/g, '&quot;').replace(/'/g, "&#39;");
-                    
-                    el.innerHTML = `
-                        <div class="log-text">"${i.t}"</div>
-                        <div class="log-meta">
-                            <span>BASE CHAIN</span>
-                            <div style="display:flex; gap:10px; align-items:center;">
-                                <button class="log-share-btn" onclick="Sharing.share('${safeText}')">SHARE</button>
-                                <a href="https://basescan.org/tx/${i.h}" target="_blank" class="log-link">TX ↗</a>
-                            </div>
-                        </div>
-                    `;
+                    el.innerHTML=`<div class="log-text">"${i.t}"</div><div class="log-meta"><span>BASE CHAIN <button class="log-share-btn" onclick="window.Sharing.share('${safeText}')">SHARE</button></span><a href="https://basescan.org/tx/${i.h}" target="_blank" class="log-link">TX ↗</a></div>`;
                     list.appendChild(el);
                 });
             }
         };
 
-        // --- SHARING (AUTO OPTIMIZED TYPOGRAPHY) ---
         const Sharing = {
             activeContext: null,
-
-            // Share can be called from history (text only) or active context (text + hash)
             async share(historyText = null) {
                 let t = historyText;
-                let h = null;
-
-                // Use active context if available and no history text provided
-                if(!t && this.activeContext) {
-                    t = this.activeContext.text;
-                    h = this.activeContext.hash;
-                }
-                
-                // Clean up quotes
+                if(!t && this.activeContext) t = this.activeContext.text;
                 if(t) t = t.replace(/"/g,'');
                 if(!t) return;
-                
-                // Farcaster Native Sharing
+
                 if(window.sdk) {
                     try {
                         window.sdk.actions.composeCast({
@@ -833,132 +593,68 @@
                     } catch(e) { console.error("FC Share Error", e); }
                 }
 
-                // Browser Sharing (Generate Image)
                 Toast.show("Minting Proof...", "🖼️");
-                
-                // Ensure canvas exists
                 const c = document.getElementById('share-canvas');
-                if(!c) { console.error("Canvas missing"); return; }
+                if(!c) return;
                 const x = c.getContext('2d');
                 
-                // 1. Background (Solid Black)
                 x.fillStyle='#000000'; x.fillRect(0,0,1200,630);
-                
-                // 2. Gold/Fire Border
-                const g=x.createLinearGradient(0,0,1200,630); 
-                g.addColorStop(0,'#ff4500'); g.addColorStop(0.5, '#ffae00'); g.addColorStop(1,'#000');
+                const g=x.createLinearGradient(0,0,1200,630); g.addColorStop(0,'#ff4500'); g.addColorStop(0.5,'#ffae00'); g.addColorStop(1,'#000');
                 x.lineWidth=30; x.strokeStyle=g; x.strokeRect(0,0,1200,630);
                 
-                // 3. Header "PROOF OF CATHARSIS"
-                x.font = 'bold 50px "Courier New", monospace'; 
-                x.fillStyle = '#ff4500'; x.textAlign = 'center';
-                x.fillText('PROOF OF CATHARSIS', 600, 100);
-                
-                x.font = '30px "Courier New", monospace'; x.fillStyle = '#888';
-                x.fillText('RECORDED ON BASE BLOCKCHAIN', 600, 160);
+                x.font='bold 50px "Courier New", monospace'; x.fillStyle='#ff4500'; x.textAlign='center'; x.fillText('PROOF OF CATHARSIS',600,100);
+                x.font='30px "Courier New", monospace'; x.fillStyle='#888'; x.fillText('RECORDED ON BASE BLOCKCHAIN',600,160);
 
-                // 4. The Regret Text (AUTO-SCALING)
-                x.fillStyle='#ffffff'; x.textAlign='center';
-                
-                // Logic to fit text perfectly
-                let fontSize = 90;
-                let lineHeight = 100;
-                
-                // Heuristic for length
+                x.fillStyle='#ffffff';
+                let fontSize = 90; let lineHeight = 100;
                 if(t.length > 20) { fontSize = 70; lineHeight = 80; }
                 if(t.length > 50) { fontSize = 50; lineHeight = 60; }
                 if(t.length > 100) { fontSize = 40; lineHeight = 50; }
-                if(t.length > 200) { fontSize = 30; lineHeight = 40; }
-                
                 x.font = `bold ${fontSize}px serif`;
-                
-                // Safe area for text is y=200 to y=500
-                this.wrap(x,`"${t}"`, 600, 320, 1000, lineHeight);
-                
-                // 5. Footer Metadata
-                x.font = '30px "Courier New", monospace'; x.fillStyle = '#888'; x.textAlign='left';
+                this.wrap(x, `"${t}"`, 600, 350, 1000, lineHeight);
+
+                x.font='30px "Courier New", monospace'; x.fillStyle='#888'; x.textAlign='left';
                 const addr = Wallet.isConnected ? Wallet.address : "0x...ANON";
                 x.fillText(`BURNED BY: ${addr.substring(0,8)}...`, 60, 580);
                 x.fillText(`DATE: ${new Date().toLocaleDateString()}`, 60, 540);
-                
-                // Branding
-                x.textAlign='right'; x.fillStyle='#ff4500';
-                x.fillText('THE DIGITAL BONFIRE', 1140, 580);
+                x.textAlign='right'; x.fillStyle='#ff4500'; x.fillText('THE DIGITAL BONFIRE', 1140, 580);
 
-                // Ensure modal elements exist
-                const img = document.getElementById('share-img');
-                const modal = document.getElementById('share-modal');
-                if(img && modal) {
-                    img.src = c.toDataURL();
-                    modal.style.display='flex';
-                }
+                const img = document.getElementById('share-img'); const modal = document.getElementById('share-modal');
+                if(img && modal) { img.src = c.toDataURL(); modal.style.display='flex'; }
             },
-            
-            // Text Wrap Logic
             wrap(ctx, text, x, y, maxWidth, lineHeight) {
                 let words = text.split(' '), line = '', lines = [];
                 for(let n=0; n<words.length; n++) {
                     let testLine = line + words[n] + ' ';
                     let metrics = ctx.measureText(testLine);
-                    if(metrics.width > maxWidth && n > 0) { lines.push(line); line = words[n] + ' '; }
-                    else { line = testLine; }
+                    if(metrics.width > maxWidth && n > 0) { lines.push(line); line = words[n] + ' '; } else { line = testLine; }
                 }
                 lines.push(line);
-                
-                // Vertically center based on number of lines
                 let startY = y - ((lines.length - 1) * lineHeight) / 2;
                 lines.forEach((l,i) => ctx.fillText(l, x, startY + (i*lineHeight)));
             }
         };
+        
+        // Expose sharing globally for HTML onClick
+        window.Sharing = Sharing;
 
-        // --- VISUALS & AUDIO ---
-        // FIX: Ensure elements exist before setting props
-        const Toast = {
-            show(msg, icon) {
-                const t = document.getElementById('toast');
-                const tMsg = document.getElementById('t-msg');
-                const tIcon = document.getElementById('t-icon');
-                if(tMsg) tMsg.innerText = msg;
-                if(tIcon && icon) tIcon.innerText = icon;
-                if(t) {
-                    t.classList.add('visible');
-                    setTimeout(() => t.classList.remove('visible'), 3000);
-                }
-            }
-        };
-
-        const Debug={log(m){const d=document.getElementById('debug');const l=document.createElement('div');l.innerText=`> ${m}`;d.prepend(l);console.log(m);}};
+        const Toast={show(m,i){const t=document.getElementById('toast'), tm=document.getElementById('t-msg'), ti=document.getElementById('t-icon'); if(t&&tm){tm.innerText=m; if(ti)ti.innerText=i||'🔥'; t.classList.add('visible'); setTimeout(()=>t.classList.remove('visible'),3000);}}};
         
         const Visuals={
             c:document.getElementById('canvas-fire').getContext('2d'), a:document.getElementById('canvas-ash').getContext('2d'), p:[], h:0, w:0,
             init(){this.resize(); window.addEventListener('resize',()=>this.resize()); this.loop();},
             resize(){this.w=window.innerWidth;this.h=window.innerHeight;this.c.canvas.width=this.a.canvas.width=this.w;this.c.canvas.height=this.a.canvas.height=this.h;},
             flare(){for(let i=0;i<60;i++)this.p.push({x:this.w/2+(Math.random()-.5)*100,y:this.h,vx:(Math.random()-.5)*2,vy:Math.random()*5+5,l:100,h:Math.random()*40+10,s:Math.random()*6+2});},
-            loop(){
-                this.c.clearRect(0,0,this.w,this.h); this.c.globalCompositeOperation='lighter';
-                if(this.p.length<100)this.p.push({x:this.w/2+(Math.random()-.5)*60,y:this.h,vx:(Math.random()-.5),vy:Math.random()*3+2,l:80,h:Math.random()*30+10,s:Math.random()*4+1});
-                for(let i=this.p.length-1;i>=0;i--){let o=this.p[i];o.x+=o.vx;o.y-=o.vy;o.l--;o.s*=.98;let g=this.c.createRadialGradient(o.x,o.y,0,o.x,o.y,o.s*2);g.addColorStop(0,`hsla(${o.h},100%,60%,${o.l/100})`);g.addColorStop(1,"transparent");this.c.fillStyle=g;this.c.beginPath();this.c.arc(o.x,o.y,o.s*2,0,Math.PI*2);this.c.fill();if(o.l<=0)this.p.splice(i,1);}
-                requestAnimationFrame(()=>this.loop());
-            }
+            loop(){this.c.clearRect(0,0,this.w,this.h); this.c.globalCompositeOperation='lighter'; if(this.p.length<100)this.p.push({x:this.w/2+(Math.random()-.5)*60,y:this.h,vx:(Math.random()-.5),vy:Math.random()*3+2,l:80,h:Math.random()*30+10,s:Math.random()*4+1}); for(let i=this.p.length-1;i>=0;i--){let o=this.p[i];o.x+=o.vx;o.y-=o.vy;o.l--;o.s*=.98;let g=this.c.createRadialGradient(o.x,o.y,0,o.x,o.y,o.s*2);g.addColorStop(0,`hsla(${o.h},100%,60%,${o.l/100})`);g.addColorStop(1,"transparent");this.c.fillStyle=g;this.c.beginPath();this.c.arc(o.x,o.y,o.s*2,0,Math.PI*2);this.c.fill();if(o.l<=0)this.p.splice(i,1);} requestAnimationFrame(()=>this.loop());}
         };
 
-        const AudioFX = {
-            ctx: null, init() { try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){} },
-            playBurn() {
-                if(!this.ctx) return;
-                const osc=this.ctx.createOscillator(); const g=this.ctx.createGain();
-                osc.connect(g); g.connect(this.ctx.destination);
-                osc.frequency.setValueAtTime(100,this.ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(10,this.ctx.currentTime+1);
-                g.gain.setValueAtTime(0.5,this.ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,this.ctx.currentTime+1);
-                osc.start(); osc.stop(this.ctx.currentTime+1);
-            }
+        const AudioFX={
+            ctx:null, init(){try{this.ctx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}},
+            playBurn(){if(!this.ctx)return; const o=this.ctx.createOscillator(), g=this.ctx.createGain(); o.connect(g); g.connect(this.ctx.destination); o.frequency.setValueAtTime(100,this.ctx.currentTime); o.frequency.exponentialRampToValueAtTime(10,this.ctx.currentTime+1); g.gain.setValueAtTime(0.5,this.ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,this.ctx.currentTime+1); o.start(); o.stop(this.ctx.currentTime+1);}
         };
 
-        // Chat
-        let cI=false;
-        window.openOnChat=()=>{document.getElementById('onchat-overlay').style.display='block';if(!cI&&window.OnChat){OnChat.mount("#onchat-widget",{theme:"dark",hideMobileTabs:true});cI=true;}};
-        window.closeOnChat=()=>{document.getElementById('onchat-overlay').style.display='none';};
-
+        let cI=false; window.openOnChat=()=>{document.getElementById('onchat-overlay').style.display='block';if(!cI&&window.OnChat){OnChat.mount("#onchat-widget",{theme:"dark",hideMobileTabs:true});cI=true;}}; window.closeOnChat=()=>{document.getElementById('onchat-overlay').style.display='none';};
+        
         window.onload = App.init;
     </script>
 </body>
