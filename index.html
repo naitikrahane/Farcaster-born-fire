@@ -6,8 +6,7 @@
     <meta name="theme-color" content="#020202">
     <meta name="description" content="Immutable Catharsis. Burn your 2025 regrets on the Base Blockchain.">
     <meta name="author" content="Protocol 2025">
-    <meta name="keywords" content="Base, Blockchain, Crypto, Regret, Burn, Fire, Farcaster, Frame">
-
+    
     <meta property="og:title" content="The Digital Bonfire">
     <meta property="og:site_name" content="The Digital Bonfire Protocol">
     <meta property="og:description" content="Leave it in 2025. Burn it on-chain.">
@@ -22,7 +21,7 @@
     <title>The Digital Bonfire | Protocol 2025</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Inter:wght@300;400;500;600&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Inter:wght@300;400;500;600&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     
@@ -30,9 +29,7 @@
 
     <style>
         :root {
-            /* COLOR PALETTE: "Volcanic Glass & Ember"
-               Designed for OLED screens with deep blacks and vibrant highlights.
-            */
+            /* COLOR PALETTE: "Volcanic Glass & Ember" */
             --bg-void: #020202;
             --c-ember: #ff3c00;
             --c-ember-glow: #ff8400;
@@ -51,57 +48,38 @@
             --f-head: 'Cinzel', serif;
             --f-body: 'Inter', sans-serif;
             --f-code: 'Space Mono', monospace;
+            --f-proof: 'Courier Prime', monospace; /* New font for proof card */
             
             /* Animation Physics */
             --ease-snap: cubic-bezier(0.22, 1, 0.36, 1);
             --ease-elastic: cubic-bezier(0.34, 1.56, 0.64, 1);
             --ease-smooth: cubic-bezier(0.4, 0.0, 0.2, 1);
             
-            /* Layout Safe Areas (Mobile Notch Support) */
+            /* Layout Safe Areas */
             --safe-top: env(safe-area-inset-top, 20px);
             --safe-bottom: env(safe-area-inset-bottom, 20px);
         }
 
-        /* --- GLOBAL RESET & BASE STYLES --- */
+        /* --- GLOBAL RESET --- */
         * { 
-            margin: 0; 
-            padding: 0; 
-            box-sizing: border-box; 
-            -webkit-tap-highlight-color: transparent; 
-            outline: none; 
-            user-select: none; 
+            margin: 0; padding: 0; box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent; outline: none; user-select: none; 
         }
         
         body {
-            background-color: var(--bg-void); 
-            color: var(--c-text);
-            font-family: var(--f-body); 
-            height: 100vh; 
-            width: 100vw;
-            overflow: hidden; 
-            display: flex; 
-            flex-direction: column;
-            align-items: center; 
-            justify-content: center;
+            background-color: var(--bg-void); color: var(--c-text);
+            font-family: var(--f-body); height: 100vh; width: 100vw;
+            overflow: hidden; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
         }
 
-        /* --- FX LAYERS (Visual Engine) --- */
-        .layer { 
-            position: absolute; 
-            inset: 0; 
-            width: 100%; 
-            height: 100%; 
-            pointer-events: none; 
-        }
-        
+        /* --- FX LAYERS --- */
+        .layer { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
         #canvas-fire { z-index: 1; }
         #canvas-smoke { z-index: 2; opacity: 0.6; mix-blend-mode: screen; }
-        #canvas-ash { z-index: 50; } /* Ash renders on top of UI elements */
+        #canvas-ash { z-index: 50; }
         
-        #vignette {
-            z-index: 3;
-            background: radial-gradient(circle at 50% 60%, transparent 10%, #000 120%);
-        }
+        #vignette { z-index: 3; background: radial-gradient(circle at 50% 60%, transparent 10%, #000 120%); }
         
         #scanlines {
             z-index: 4; opacity: 0.04;
@@ -119,27 +97,21 @@
             position: relative; z-index: 10; width: 100%; height: 100%;
             display: flex; flex-direction: column;
             padding-top: var(--safe-top); padding-bottom: var(--safe-bottom);
-            perspective: 1200px; /* Enable 3D transforms for paper physics */
-            opacity: 0; /* Hidden by default until JS loads */
-            transition: opacity 0.8s var(--ease-smooth);
+            perspective: 1200px; opacity: 0; transition: opacity 0.8s var(--ease-smooth);
         }
         #ui-layer.visible { opacity: 1; }
 
         /* --- HEADER (HUD) --- */
         .hud-bar {
-            width: 100%; padding: 15px 20px; 
-            display: flex; justify-content: space-between; align-items: flex-start; 
-            z-index: 100;
+            width: 100%; padding: 15px 20px; display: flex; justify-content: space-between; align-items: flex-start; z-index: 100;
         }
 
         .icon-btn {
-            width: 44px; height: 44px; 
-            background: rgba(0,0,0,0.6);
-            border: 1px solid var(--c-border); 
-            border-radius: 12px;
+            width: 44px; height: 44px; background: rgba(0,0,0,0.6);
+            border: 1px solid var(--c-border); border-radius: 12px;
             display: flex; align-items: center; justify-content: center; 
-            font-size: 1.4rem; color: #888; 
-            backdrop-filter: blur(10px); cursor: pointer; transition: 0.2s;
+            font-size: 1.4rem; color: #888; backdrop-filter: blur(10px); 
+            cursor: pointer; transition: 0.2s;
         }
         .icon-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.1); color: white; }
 
@@ -147,8 +119,7 @@
         .wallet-terminal {
             font-family: var(--f-code); font-size: 0.6rem; text-transform: uppercase;
             background: rgba(0,0,0,0.8); border: 1px solid var(--c-border);
-            padding: 10px 14px; border-radius: 6px; 
-            display: flex; flex-direction: column; gap: 4px; 
+            padding: 10px 14px; border-radius: 6px; display: flex; flex-direction: column; gap: 4px; 
             cursor: pointer; transition: 0.3s; text-align: right; min-width: 140px;
             backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
@@ -176,7 +147,7 @@
         .menu-opt:hover { background: #151515; color: white; }
         .menu-opt.danger { color: #ff4444; border-top: 1px solid #222; }
 
-        /* --- VIEW CONTROLLER (Page Transitions) --- */
+        /* --- VIEW CONTROLLER --- */
         .view-container {
             flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
             width: 100%; max-width: 460px; margin: 0 auto; position: relative;
@@ -186,12 +157,10 @@
             position: absolute; width: 100%; top: 0;
             display: flex; flex-direction: column; align-items: center;
             transition: all 0.8s var(--ease-out);
-            opacity: 0; pointer-events: none; 
-            transform: translateY(60px) scale(0.95); filter: blur(12px);
+            opacity: 0; pointer-events: none; transform: translateY(60px) scale(0.95); filter: blur(12px);
         }
         .view-page.active {
-            opacity: 1; pointer-events: auto; 
-            transform: translateY(0) scale(1); filter: blur(0); position: relative;
+            opacity: 1; pointer-events: auto; transform: translateY(0) scale(1); filter: blur(0); position: relative;
         }
 
         /* Titles */
@@ -205,15 +174,11 @@
             letter-spacing: 0.6em; opacity: 0.5; margin-top: 15px; color: var(--c-ember);
         }
 
-        /* --- PAPER PHYSICS MODULE --- */
-        .burn-stage {
-            width: 100%; position: relative; perspective: 1200px; margin-bottom: 30px;
-        }
+        /* --- PAPER PHYSICS --- */
+        .burn-stage { width: 100%; position: relative; perspective: 1200px; margin-bottom: 30px; }
         
-        /* The "Paper" Container */
         .paper-input-wrapper {
-            width: 100%; background: #e3dcd2; /* Parchment Color */
-            padding: 4px; /* Border thickness */
+            width: 100%; background: #e3dcd2; padding: 4px; 
             box-shadow: 0 30px 80px rgba(0,0,0,0.8);
             transform-origin: center bottom;
             transition: transform 0.8s ease-in-out, opacity 0.8s, filter 0.8s;
@@ -227,7 +192,6 @@
             border: 1px solid #c0b090;
         }
 
-        /* Burning State Animation */
         .paper-input-wrapper.burning {
             animation: paperBurnSequence 2.2s forwards cubic-bezier(0.6, 0.04, 0.98, 0.335);
         }
@@ -260,7 +224,6 @@
             transform: scale(1); transition: transform 0.1s;
         }
         .ignite-wrapper:active { transform: scale(0.98); border-color: #555; }
-        /* Shake effect */
         .ignite-wrapper.holding { animation: vibration 0.1s linear infinite; border-color: var(--c-ember); }
 
         .ignite-fill {
@@ -514,9 +477,6 @@
             chainIdHex: "0x2105", // Base Mainnet (8453)
             // THE DIRECT MINI APP LINK FOR SHARING
             miniAppUrl: "https://farcaster.xyz/miniapps/rg2ACynTEH_u/the-digital-bornfire",
-            // THE BACKEND OG GENERATOR URL (Using Placehold.co for reliability)
-            // This URL structure mimics the "Black Card" design automatically
-            ogBaseUrl: "https://placehold.co/1200x630/000000/ff4500.png",
             // Multi-RPC Load Balancer List for Redundancy
             rpcs: [
                 'https://mainnet.base.org',
@@ -532,32 +492,29 @@
             ]
         };
 
-        // --- PARTICLE PHYSICS ENGINE (ADVANCED) ---
+        // --- PARTICLE PHYSICS ENGINE (VISUALS) ---
         class Particle {
             constructor(x, y, type) {
-                this.x = x;
-                this.y = y;
-                this.type = type; // 'fire', 'smoke', or 'ash'
-                this.vx = (Math.random() - 0.5) * 2;
+                this.x=x; this.y=y; this.type=type; 
+                this.vx=(Math.random()-.5)*2;
                 
-                // Physics differences based on type
                 if (type === 'fire') {
-                    this.vy = Math.random() * -5;
+                    this.vy = Math.random()*-5;
                     this.life = 100;
                     this.maxLife = 100;
-                    this.size = Math.random() * 5 + 2;
-                    this.hue = Math.random() * 30 + 10; // Orange to Yellow
+                    this.size = Math.random()*5+2;
+                    this.hue = Math.random()*30+10;
                 } else if (type === 'smoke') {
-                    this.vy = Math.random() * -2;
+                    this.vy = Math.random()*-2;
                     this.life = 150;
                     this.maxLife = 150;
-                    this.size = Math.random() * 10 + 5;
+                    this.size = Math.random()*10+5;
                     this.hue = 0; // Black/Grey
                 } else { // Ash
-                    this.vy = Math.random() * 2; // Falls down
+                    this.vy = Math.random()*2; // Falls down
                     this.life = 200;
                     this.maxLife = 200;
-                    this.size = Math.random() * 3;
+                    this.size = Math.random()*3;
                     this.hue = 0;
                 }
             }
@@ -715,7 +672,10 @@
                 // --- KEYBOARD FIX: BLUR INPUT TO HIDE KEYBOARD ---
                 input.blur();
 
-                if(!Wallet.isConnected) { Wallet.connect(); return; }
+                if(!Wallet.isConnected) { 
+                    Toast.show("Connect Wallet to Burn", "🔌"); 
+                    return; 
+                }
 
                 // Visual Feedback
                 document.getElementById('ignite-text').innerText = "BURNING...";
@@ -748,7 +708,7 @@
                     document.getElementById('paper-wrapper').classList.remove('burning');
                     HoldButton.reset();
                     
-                    if(e.code === 4001) Toast.show("Cancelled", "❌");
+                    if(e.code === 4001 || (e.error && e.error.code === 4001)) Toast.show("Cancelled", "❌");
                     else if(e.message.includes("insufficient")) Toast.show("No ETH on Base", "💰");
                     else Toast.show("Burn Failed", "⚠️");
                 }
@@ -783,102 +743,91 @@
             }
         };
 
-        // --- HYDRA RPC CONTROLLER (Load Balancer) ---
         const RPCController = {
-            async getProvider() {
-                // Try each RPC sequentially until one works
-                for(let url of CONFIG.rpcs) {
-                    try {
-                        const p = new ethers.providers.JsonRpcProvider(url);
-                        await p.getBlockNumber(); // Ping check
-                        return p;
-                    } catch(e) { console.warn("RPC Fail:", url); }
-                }
-                return null;
-            },
-
+            async getProvider() { for(let url of CONFIG.rpcs) { try { const p = new ethers.providers.JsonRpcProvider(url); await p.getBlockNumber(); return p; } catch(e) { console.warn("RPC Fail:", url); } } return null; },
             async loadGlobalStats() {
                 const el = document.getElementById('global-burns');
                 const provider = await this.getProvider();
                 if(!provider) { el.innerText = "NET_ERR"; return; }
-                
-                try {
-                    const c = new ethers.Contract(CONFIG.contract, CONFIG.abi, provider);
-                    const t = await c.totalBurns();
-                    el.innerText = t.toString();
-                } catch(e) { el.innerText = "SYNC..."; }
+                try { const c = new ethers.Contract(CONFIG.contract, CONFIG.abi, provider); const t = await c.totalBurns(); el.innerText = t.toString(); } catch(e) { el.innerText = "SYNC..."; }
             }
         };
 
-        // --- HOLD BUTTON (MOBILE OPTIMIZED) ---
         const HoldButton = {
-            el: document.getElementById('ignite-btn'),
-            fill: document.getElementById('ignite-fill'),
-            text: document.getElementById('ignite-text'),
-            timer: null, held: false, locked: false,
-
+            el: document.getElementById('ignite-btn'), fill: document.getElementById('ignite-fill'), text: document.getElementById('ignite-text'), timer: null, held: false, locked: false,
             init() {
-                const start = (e) => {
-                    if(e.type==='touchstart') e.preventDefault();
-                    if(this.locked) return;
-                    this.held = true;
-                    this.el.classList.add('holding');
-                    this.fill.style.transition = 'width 1.2s linear';
-                    this.fill.style.width = '100%';
-                    // Simple haptic loop simulation
-                    if(navigator.vibrate) navigator.vibrate([10, 10, 10]); 
-                    this.timer = setTimeout(() => { this.locked = true; App.ignite(); }, 1200);
-                };
-                const stop = (e) => {
-                    if(e.type==='touchend') e.preventDefault();
-                    if(this.locked) return;
-                    this.held = false;
-                    this.el.classList.remove('holding');
-                    clearTimeout(this.timer);
-                    this.fill.style.transition = 'width 0.2s ease-out';
-                    this.fill.style.width = '0%';
-                };
-                this.el.addEventListener('mousedown', start);
-                this.el.addEventListener('touchstart', start, {passive:false});
-                this.el.addEventListener('mouseup', stop);
-                this.el.addEventListener('mouseleave', stop);
-                this.el.addEventListener('touchend', stop);
+                const start = (e) => { if(e.type==='touchstart') e.preventDefault(); if(this.locked) return; this.held=true; this.el.classList.add('holding'); this.fill.style.transition='width 1.2s linear'; this.fill.style.width='100%'; if(navigator.vibrate) navigator.vibrate([10,10,10]); this.timer=setTimeout(()=>{this.locked=true; App.ignite();},1200); };
+                const stop = (e) => { if(e.type==='touchend') e.preventDefault(); if(this.locked) return; this.held=false; this.el.classList.remove('holding'); clearTimeout(this.timer); this.fill.style.transition='width 0.2s ease-out'; this.fill.style.width='0%'; };
+                this.el.addEventListener('mousedown', start); this.el.addEventListener('touchstart', start, {passive:false});
+                this.el.addEventListener('mouseup', stop); this.el.addEventListener('mouseleave', stop); this.el.addEventListener('touchend', stop);
             },
-            reset() {
-                this.locked=false; this.held=false;
-                this.el.classList.remove('holding');
-                this.fill.style.width='0%';
-                this.text.innerText = "HOLD TO BURN";
-            }
+            reset() { this.locked=false; this.held=false; this.el.classList.remove('holding'); this.fill.style.width='0%'; this.text.innerText = "HOLD TO BURN"; }
         };
 
-        // --- WALLET MANAGER ---
+        // --- FIXED WALLET CONTROLLER FOR BROWSER & FC ---
         const Wallet = {
             provider: null, signer: null, address: null, contract: null, isConnected: false,
 
             async init() {
-                // Auto-connect if environment detected
-                if(window.ethereum?.selectedAddress) this.connect(true);
-                else if(window.sdk?.wallet) {
-                    const p = await window.sdk.wallet.getEthereumProvider();
-                    if(p) this.connect(true);
+                // Check if we are in Farcaster, if so, try to get that provider first
+                if(window.sdk && window.sdk.wallet) {
+                    try {
+                        const p = await window.sdk.wallet.getEthereumProvider();
+                        if(p) {
+                             this.connect(true); // Silent connect
+                             return;
+                        }
+                    } catch(e) { console.warn("SDK auto-connect failed", e); }
+                }
+
+                // Fallback to standard browser check
+                if(window.ethereum && window.ethereum.selectedAddress) {
+                    this.connect(true);
                 }
             },
 
             async connect(silent = false) {
                 try {
-                    let raw;
-                    // Prefer Farcaster
-                    if(window.sdk?.wallet) raw = await window.sdk.wallet.getEthereumProvider();
-                    // Fallback to Window
-                    if(!raw && window.ethereum) raw = window.ethereum;
+                    let rawProvider;
                     
-                    if(!raw) { if(!silent) alert("No wallet found. Use Warpcast."); return; }
+                    // 1. Priority: Farcaster SDK Provider
+                    if(window.sdk && window.sdk.wallet) {
+                         try { rawProvider = await window.sdk.wallet.getEthereumProvider(); } catch(e){ console.warn("SDK provider failed", e); }
+                    }
 
-                    this.provider = new ethers.providers.Web3Provider(raw);
-                    if(!silent) await this.provider.send("eth_requestAccounts", []);
+                    // 2. Fallback: Standard Window Ethereum (MetaMask, etc.)
+                    if(!rawProvider && window.ethereum) {
+                        rawProvider = window.ethereum;
+                    }
                     
-                    try { await raw.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CONFIG.chainIdHex }] }); } catch(e){}
+                    if(!rawProvider) { if(!silent) Toast.show("No Wallet Found", "⚠️"); return; }
+
+                    this.provider = new ethers.providers.Web3Provider(rawProvider);
+
+                    // 3. Explicitly request accounts (Crucial for browser wallets)
+                    // We only explicitly request if it's a user action (!silent) or if we don't have accounts yet.
+                    let accounts = await this.provider.listAccounts();
+                    if (accounts.length === 0 || !silent) {
+                         try {
+                            accounts = await this.provider.send("eth_requestAccounts", []);
+                         } catch (reqErr) {
+                             if (reqErr.code === 4001) throw new Error("User rejected connection");
+                             throw reqErr;
+                         }
+                    }
+                    
+                    // 4. Switch Chain to Base
+                    try { 
+                        await rawProvider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CONFIG.chainIdHex }] }); 
+                    } catch(switchError){
+                        // Error 4902 means chain hasn't been added to wallet yet.
+                        if (switchError.code === 4902) {
+                             if(!silent) Toast.show("Please add Base Network", "⚙️");
+                        } else {
+                             console.warn("Chain switch failed", switchError);
+                        }
+                        // We don't hard fail here, as the user might switch manually.
+                    }
 
                     this.signer = this.provider.getSigner();
                     this.address = await this.signer.getAddress();
@@ -887,7 +836,13 @@
                     if(!silent) Toast.show("Connected", "✅");
                     History.initUser(); // Load my history
 
-                } catch(e) { Debug.log(e.message); }
+                } catch(e) { 
+                    console.error("Wallet Connect Error:", e.message);
+                    if(!silent) {
+                        if(e.message.includes("User rejected")) Toast.show("Connection Rejected", "❌");
+                        else Toast.show("Connection Failed", "⚠️");
+                    }
+                }
             },
 
             disconnect() {
@@ -915,7 +870,6 @@
             copy() { navigator.clipboard.writeText(this.address); Toast.show("Copied", "📋"); }
         };
 
-        // --- HISTORY (REAL INDEXER) ---
         const History = {
             mode: 'yours', init() {}, initUser() { if(this.mode==='yours') this.loadYours(); },
             open() { document.getElementById('history-drawer').classList.add('open'); if(Wallet.isConnected) this.refresh(); },
@@ -930,6 +884,7 @@
                 const k=`b_${Wallet.address}`; const local=JSON.parse(localStorage.getItem(k)||"[]");
                 try {
                     const p=await RPCController.getProvider(); const c=new ethers.Contract(CONFIG.contract, CONFIG.abi, p); const block=await p.getBlockNumber();
+                    // Scan last 50k blocks for personal history
                     const logs=await c.queryFilter(c.filters.Burned(Wallet.address), block-50000, 'latest');
                     const items=logs.reverse().map(l=>({t:c.interface.parseLog(l).args.regret, h:l.transactionHash, d:Date.now()}));
                     if(items.length>0) this.draw(items); else if(local.length>0) this.draw(local); else list.innerHTML='<div style="padding:40px;text-align:center;color:#555;font-family:var(--f-code);">No personal history.</div>';
@@ -939,6 +894,7 @@
                 const list=document.getElementById('history-content'); list.innerHTML='<div style="padding:20px;text-align:center;color:#555;font-family:var(--f-code);">Scanning...</div>';
                 try {
                     const p=await RPCController.getProvider(); const c=new ethers.Contract(CONFIG.contract, CONFIG.abi, p); const b=await p.getBlockNumber();
+                    // Scan last 2k blocks for global history
                     const logs=await c.queryFilter(c.filters.Burned(), b-2000, 'latest');
                     const items=logs.reverse().map(l=>({t:c.interface.parseLog(l).args.regret, h:l.transactionHash, d:Date.now()}));
                     if(items.length>0) this.draw(items); else list.innerHTML='<div style="padding:40px;text-align:center;color:#555;font-family:var(--f-code);">No recent burns.</div>';
@@ -959,14 +915,23 @@
         const Sharing = {
             activeContext: null,
             async share(historyText = null) {
+                // WALLET CHECK
+                if(!Wallet.isConnected) { 
+                    Toast.show("Connect Wallet First", "🔌"); 
+                    return; 
+                }
+
                 let t = historyText; if(!t && this.activeContext) t = this.activeContext.text; if(t) t = t.replace(/"/g,''); if(!t) return;
                 
                 // --- FARCASTER NATIVE SHARE ---
-                // Uses placehold.co to generate a Dynamic Image on the fly.
+                // IMPORTANT: Farcaster composeCast requires a PUBLIC IMAGE URL.
+                // It cannot directly use the local canvas data.
+                // To get the exact high-fidelity image on Farcaster, a backend server is required to upload the canvas data.
+                // As a frontend-only fallback, we use a placeholder service that approximates the look.
                 if(window.sdk && window.sdk.actions) {
                     try {
                         const safeText = encodeURIComponent(t.substring(0, 50));
-                        // DYNAMIC IMAGE URL (Uses Public Service with custom styling to match Proof Card)
+                        // DYNAMIC IMAGE URL (Best effort fallback without backend)
                         const dynamicImage = `https://placehold.co/1200x630/000000/ff4500.png?text=${safeText}&font=playfair-display`;
                         
                         window.sdk.actions.composeCast({
@@ -977,11 +942,12 @@
                     } catch(e) { console.error("FC Share Error", e); }
                 }
 
-                // --- BROWSER SHARE (CANVAS) ---
+                // --- BROWSER SHARE (CANVAS HIGH-FIDELITY) ---
+                // In a standard browser, we generate the exact image on canvas and let the user download it.
                 Toast.show("Generating Proof...", "🖼️");
                 const c = document.getElementById('share-canvas'); if(!c) return; const x = c.getContext('2d');
                 
-                // Draw the High-Fidelity Card
+                // Draw the High-Fidelity Card based on the provided image style
                 this.drawCard(x, t);
                 
                 // Show Modal
@@ -998,42 +964,45 @@
                 } catch(e) { Toast.show("Use Long Press to Save", "⚠️"); }
             },
             
-            // PIXEL-PERFECT CARD GENERATOR (Matches your upload)
+            // PIXEL-PERFECT CARD GENERATOR (Matches your upload image_0.png)
             drawCard(x, t) {
                 // 1. Black Background
                 x.fillStyle='#000000'; x.fillRect(0,0,1200,630);
                 
                 // 2. Orange Top/Bottom Borders (Design Match)
-                const g=x.createLinearGradient(0,0,1200,0); 
-                g.addColorStop(0,'#ff4500'); g.addColorStop(0.5,'#ffae00'); g.addColorStop(1,'#ff4500');
-                
-                x.fillStyle = g;
-                x.fillRect(0, 0, 1200, 20); // Top Bar
-                x.fillRect(0, 610, 1200, 20); // Bottom Bar
+                // Using solid color to match image_0.png style precisely
+                x.fillStyle = '#ff4500';
+                x.fillRect(0, 0, 1200, 25); // Top Bar
+                x.fillRect(0, 605, 1200, 25); // Bottom Bar
                 
                 // 3. Header "PROOF OF CATHARSIS"
-                x.font='bold 60px "Courier New", monospace'; 
+                // Using 'Courier Prime' used in CSS var(--f-proof)
+                x.font='bold 60px "Courier Prime", monospace'; 
                 x.fillStyle='#ff4500'; 
                 x.textAlign='center'; 
-                x.fillText('PROOF OF CATHARSIS', 600, 100);
+                x.fillText('PROOF OF CATHARSIS', 600, 130);
                 
                 // 4. Subheader
-                x.font='30px "Courier New", monospace'; 
+                x.font='30px "Courier Prime", monospace'; 
                 x.fillStyle='#666'; 
-                x.fillText('RECORDED ON BASE BLOCKCHAIN', 600, 160);
+                x.fillText('RECORDED ON BASE BLOCKCHAIN', 600, 190);
                 
-                // 5. The Regret Text (Big & Center)
+                // 5. The Regret Text (Big & Center, Serif font like image)
                 x.fillStyle='#ffffff'; 
                 x.textAlign='center';
-                x.font = 'bold 90px serif';
-                this.wrap(x, `"${t}"`, 600, 320, 1000, 110);
+                // Using a generic serif font to match the image style
+                x.font = 'bold 120px serif';
+                const textWithQuotes = `"${t}"`;
+                // Adjust Y position to center it better based on image_0.png
+                this.wrap(x, textWithQuotes, 600, 350, 1000, 140);
                 
                 // 6. Footer Metadata (Left)
-                x.font='24px "Courier New", monospace'; 
+                x.font='24px "Courier Prime", monospace'; 
                 x.fillStyle='#666'; 
                 x.textAlign='left';
-                const addr = Wallet.address ? Wallet.address : "0x033D986709c6c794C42a1259A8baeb6693de9444"; // Default or Real
-                x.fillText(`DATE: ${new Date().toLocaleDateString()}`, 50, 540);
+                const addr = Wallet.address ? Wallet.address : "0x...";
+                const dateStr = new Date().toLocaleDateString('en-US'); //Format like 12/31/2025
+                x.fillText(`DATE: ${dateStr}`, 50, 540);
                 x.fillText(`BURNED BY: ${addr}`, 50, 580);
             },
             
