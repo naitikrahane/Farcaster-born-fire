@@ -9,7 +9,7 @@
     <meta property="og:title" content="The Digital Bonfire">
     <meta property="og:site_name" content="The Digital Bonfire Protocol">
     <meta property="og:description" content="Leave it in 2025. Burn it on-chain.">
-    <meta property="og:url" content="https://farcaster-born-fire.vercel.app">
+    <meta property="og:url" content="https://farcaster-born-fire-vv3n.vercel.app">
     
     <meta property="og:image" content="https://placehold.co/1200x630/020202/ff4500.png?text=THE+DIGITAL+BONFIRE&font=playfair-display">
     
@@ -33,7 +33,6 @@
             --c-ember: #ff3c00;
             --c-ember-glow: #ff8400;
             --c-ash: #111111;
-            --c-smoke: #2a2a2a;
             --c-text: #e0e0e0;
             --c-dim: #666;
             --c-term-online: #00ff9d;
@@ -67,22 +66,21 @@
         /* --- FX LAYERS (Visual Engine) --- */
         .layer { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
         #canvas-fire { z-index: 1; }
-        #canvas-smoke { z-index: 2; opacity: 0.6; }
         #canvas-ash { z-index: 50; } /* Ash renders on top of UI elements */
         
         #vignette {
-            z-index: 3;
+            z-index: 2;
             background: radial-gradient(circle at 50% 60%, transparent 10%, #000 120%);
         }
         
         #scanlines {
-            z-index: 4; opacity: 0.04;
+            z-index: 3; opacity: 0.04;
             background: repeating-linear-gradient(to bottom, transparent 0px, transparent 2px, #000 2px, #000 4px);
             animation: scan 10s linear infinite;
         }
         
         #noise {
-            z-index: 5; opacity: 0.03;
+            z-index: 4; opacity: 0.03;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
         }
 
@@ -361,7 +359,6 @@
 <body>
 
     <canvas id="canvas-fire" class="layer"></canvas>
-    <canvas id="canvas-smoke" class="layer"></canvas>
     <canvas id="canvas-ash" class="layer"></canvas>
     <div id="vignette" class="layer"></div>
     <div id="scanlines" class="layer"></div>
@@ -496,97 +493,30 @@
         // --- PARTICLE PHYSICS ENGINE (VISUALS) ---
         class Particle {
             constructor(x, y, type) {
-                this.x=x; this.y=y; this.type=type; 
-                this.vx=(Math.random()-.5)*2;
-                
-                if (type === 'fire') {
-                    this.vy = Math.random()*-5;
-                    this.life = 100;
-                    this.size = Math.random()*5+2;
-                    this.hue = Math.random()*30+10;
-                } else if (type === 'smoke') {
-                    this.vy = Math.random()*-2;
-                    this.life = 150;
-                    this.size = Math.random()*10+5;
-                } else { // Ash
-                    this.vy = Math.random()*2;
-                    this.life = 200;
-                    this.size = Math.random()*3;
-                }
+                this.x=x; this.y=y; this.type=type; this.vx=(Math.random()-.5)*2;
+                this.vy=type==='fire'?Math.random()*-5:Math.random()*2; this.life=100;
+                this.size=Math.random()*5+2; this.hue=type==='fire'?Math.random()*30+10:0;
             }
-
-            update() {
-                this.x += this.vx;
-                this.y += this.vy;
-                this.life -= 1;
-                if(this.type !== 'smoke') this.size *= 0.96;
-                else this.size *= 1.01; // Smoke expands
-            }
-
+            update() { this.x+=this.vx; this.y+=this.vy; this.life-=1; this.size*=0.96; }
             draw(ctx) {
                 ctx.beginPath();
-                if (this.type === 'fire') {
+                if(this.type==='fire'){
                     const g=ctx.createRadialGradient(this.x,this.y,0,this.x,this.y,this.size);
-                    g.addColorStop(0,`hsla(${this.hue},100%,60%,${this.life/100})`); 
-                    g.addColorStop(1,'transparent');
-                    ctx.fillStyle=g; 
-                    ctx.globalCompositeOperation='lighter';
-                } else if (this.type === 'smoke') {
-                    ctx.fillStyle=`rgba(50,50,50,${this.life/500})`;
-                    ctx.globalCompositeOperation='source-over';
-                } else {
-                    ctx.fillStyle=`rgba(50,50,50,${this.life/100})`;
-                    ctx.globalCompositeOperation='source-over';
-                }
-                ctx.arc(this.x,this.y,this.size,0,Math.PI*2); 
-                ctx.fill();
+                    g.addColorStop(0,`hsla(${this.hue},100%,60%,${this.life/100})`); g.addColorStop(1,'transparent');
+                    ctx.fillStyle=g; ctx.globalCompositeOperation='lighter';
+                } else { ctx.fillStyle=`rgba(50,50,50,${this.life/100})`; ctx.globalCompositeOperation='source-over'; }
+                ctx.arc(this.x,this.y,this.size,0,Math.PI*2); ctx.fill();
             }
         }
-
-        const Visuals = {
-            ctxFire: document.getElementById('canvas-fire').getContext('2d'),
-            ctxSmoke: document.getElementById('canvas-smoke').getContext('2d'),
-            ctxAsh: document.getElementById('canvas-ash').getContext('2d'),
-            particles: [],
-            width: 0,
-            height: 0,
-
-            init() {
-                this.resize();
-                window.addEventListener('resize', () => this.resize());
-                this.loop();
-            },
-
-            resize() {
-                this.width = window.innerWidth;
-                this.height = window.innerHeight;
-                this.ctxFire.canvas.width = this.ctxSmoke.canvas.width = this.ctxAsh.canvas.width = this.width;
-                this.ctxFire.canvas.height = this.ctxSmoke.canvas.height = this.ctxAsh.canvas.height = this.height;
-            },
-
-            flare() {
-                for (let i = 0; i < 80; i++) {
-                    this.particles.push(new Particle(this.width/2+(Math.random()-.5)*100, this.height, 'fire'));
-                    if(i%5===0) this.particles.push(new Particle(this.width/2+(Math.random()-.5)*100, this.height, 'smoke'));
-                }
-            },
-
-            loop() {
-                this.ctxFire.clearRect(0,0,this.width,this.height);
-                this.ctxSmoke.clearRect(0,0,this.width,this.height);
-                this.ctxAsh.clearRect(0,0,this.width,this.height);
-
-                if(this.particles.length<150) this.particles.push(new Particle(this.width/2+(Math.random()-.5)*60, this.height, 'fire'));
-
-                for(let i=this.particles.length-1;i>=0;i--){
-                    const p=this.particles[i];
-                    p.update();
-                    if(p.type==='fire') p.draw(this.ctxFire);
-                    else if(p.type==='smoke') p.draw(this.ctxSmoke);
-                    else p.draw(this.ctxAsh);
-
-                    if(p.life<=0) this.particles.splice(i,1);
-                }
+        const Visuals={
+            ctxFire:document.getElementById('canvas-fire').getContext('2d'), ctxAsh:document.getElementById('canvas-ash').getContext('2d'), particles:[], width:0, height:0,
+            init(){this.resize();window.addEventListener('resize',()=>this.resize());this.loop();},
+            resize(){this.width=window.innerWidth;this.height=window.innerHeight;this.ctxFire.canvas.width=this.ctxAsh.canvas.width=this.width;this.ctxFire.canvas.height=this.ctxAsh.canvas.height=this.height;},
+            flare(){for(let i=0;i<80;i++)this.particles.push(new Particle(this.width/2+(Math.random()-.5)*100,this.height,'fire'));},
+            loop(){
+                this.ctxFire.clearRect(0,0,this.width,this.height); this.ctxAsh.clearRect(0,0,this.width,this.height);
+                if(this.particles.length<150)this.particles.push(new Particle(this.width/2+(Math.random()-.5)*60,this.height,'fire'));
+                for(let i=this.particles.length-1;i>=0;i--){const p=this.particles[i];p.update();p.draw(p.type==='fire'?this.ctxFire:this.ctxAsh);if(p.life<=0)this.particles.splice(i,1);}
                 requestAnimationFrame(()=>this.loop());
             }
         };
@@ -605,6 +535,10 @@
                 const input = document.getElementById('regret-input');
                 const text = input.value.trim();
                 if(!text) { Toast.show("Input required", "⚠️"); return; }
+                
+                // --- KEYBOARD FIX: Blur input immediately ---
+                input.blur();
+
                 if(!Wallet.isConnected) { Wallet.connect(); return; }
                 document.getElementById('ignite-text').innerText = "BURNING...";
                 document.getElementById('paper-wrapper').classList.add('burning');
@@ -720,18 +654,16 @@
             }
         };
 
-        // --- SHARING (HYBRID: CANVAS FOR DOWNLOAD, URL FOR FARCASTER) ---
         const Sharing = {
             activeContext: null,
             async share(historyText = null) {
                 let t = historyText; if(!t && this.activeContext) t = this.activeContext.text; if(t) t = t.replace(/"/g,''); if(!t) return;
                 
-                // FARCASTER NATIVE SHARE
-                // Uses a public dynamic image generator to avoid backend requirements
+                // FARCASTER NATIVE SHARE - Uses placehold.co dynamic URL
                 if(window.sdk && window.sdk.actions) {
                     try {
-                        const safeText = encodeURIComponent(t.substring(0, 45)); // Limit char count for URL
-                        // This generates a "Black Card" looking image on the fly
+                        const safeText = encodeURIComponent(t.substring(0, 50));
+                        // Dynamic Image: Black background, Orange text
                         const dynamicImage = `https://placehold.co/1200x630/000000/ff4500.png?text=${safeText}&font=playfair-display`;
                         
                         window.sdk.actions.composeCast({
@@ -742,7 +674,7 @@
                     } catch(e) { console.error("FC Share Error", e); }
                 }
 
-                // BROWSER FALLBACK (CANVAS GENERATION)
+                // WEB SHARE - Generate Canvas
                 Toast.show("Generating Proof...", "🖼️");
                 const c = document.getElementById('share-canvas'); if(!c) return; const x = c.getContext('2d');
                 this.drawCard(x, t);
@@ -757,25 +689,26 @@
                 } catch(e) { Toast.show("Use Long Press to Save", "⚠️"); }
             },
             drawCard(x, t) {
-                // High-Fidelity Canvas Drawing
+                // Exact replication of the Black Card Design
                 x.fillStyle='#000000'; x.fillRect(0,0,1200,630);
                 
-                // Gold Gradient Border
-                const g=x.createLinearGradient(0,0,1200,630); 
-                g.addColorStop(0,'#ff4500'); g.addColorStop(0.5,'#ffae00'); g.addColorStop(1,'#000');
-                x.lineWidth=30; x.strokeStyle=g; x.strokeRect(0,0,1200,630);
+                // Orange Border
+                x.lineWidth=30; x.strokeStyle='#ff4500'; x.strokeRect(0,0,1200,630);
                 
-                // Typography
+                // Header
                 x.font='bold 50px "Courier New", monospace'; x.fillStyle='#ff4500'; x.textAlign='center'; x.fillText('PROOF OF CATHARSIS',600,100);
                 x.font='30px "Courier New", monospace'; x.fillStyle='#888'; x.fillText('RECORDED ON BASE BLOCKCHAIN',600,160);
                 
-                // Regret Text (Auto-Scaling)
+                // The Regret
                 x.fillStyle='#ffffff'; x.textAlign='center';
                 let fontSize=90; let lineHeight=100;
-                if(t.length>20){fontSize=70;lineHeight=80;} if(t.length>50){fontSize=50;lineHeight=60;} if(t.length>100){fontSize=40;lineHeight=50;}
-                x.font=`bold ${fontSize}px serif`; this.wrap(x,`"${t}"`,600,320,1000,lineHeight);
+                if(t.length>20){fontSize=70;lineHeight=80;} if(t.length>50){fontSize=50;lineHeight=60;}
+                x.font=`bold ${fontSize}px serif`; 
+                // Quote text
+                const textWithQuotes = `"${t}"`;
+                this.wrap(x, textWithQuotes, 600, 320, 1000, lineHeight);
                 
-                // Metadata Footer
+                // Footer
                 x.font='30px "Courier New", monospace'; x.fillStyle='#888'; x.textAlign='left';
                 x.fillText(`BURNED BY: ${Wallet.address?Wallet.address.substring(0,8)+'...':'0x...ANON'}`,60,580);
                 x.fillText(`DATE: ${new Date().toLocaleDateString()}`,60,540);
@@ -806,7 +739,7 @@
 
     <script type="module">
         try {
-            const { sdk } = await import('https://esm.sh/@farcaster/miniapp-sdk');
+            const { sdk } = await import('https://esm.sh/@farcaster/miniapp-sdk@0.0.61');
             window.sdk = sdk;
             await sdk.actions.ready({ disableNativeGestures: true });
             console.log('✅ Farcaster SDK: Ready signal sent');
