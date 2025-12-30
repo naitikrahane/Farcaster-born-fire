@@ -26,3 +26,10 @@
     "castShareUrl": "https://warpcast.com/~/compose?text=I%20am%20burning%20my%202025%20regrets%20on%20Base.%20%F0%9F%94%A5&embeds[]=https://farcaster-born-fire.vercel.app"
   }
 }
+{
+  "accountAssociation": {
+    "header": "eyJmaWQiOjg0NTYyMywidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweDhiM2JhMjBGYzEwNGY4ZGJGY0Y0QTgwNjJjRjJhRjhBMWZkOTY2N2MifQ",
+    "payload": "eyJkb21haW4iOiJmYXJjYXN0ZXItYm9ybi1maXJlLnZlcmNlbC5hcHAifQ",
+    "signature": "8f4HQPwwNFKvKb166LiPGDrSEfyfRMLMrZ6f2iwKt8wlm3XOGG4S6L1QzbOnjChxUBuRRM68HxdqBDz3nOigdRs="
+  }
+}
