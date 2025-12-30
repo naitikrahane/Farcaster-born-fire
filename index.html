@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#020202">
     <meta name="description" content="Immutable Catharsis. Burn your 2025 regrets on the Base Blockchain.">
-    
+    <meta name="author" content="Protocol 2025">
+    <meta name="keywords" content="Base, Blockchain, Crypto, Regret, Burn, Fire, Farcaster, Frame">
+
     <meta property="og:title" content="The Digital Bonfire">
     <meta property="og:site_name" content="The Digital Bonfire Protocol">
     <meta property="og:description" content="Leave it in 2025. Burn it on-chain.">
@@ -20,7 +22,7 @@
     <title>The Digital Bonfire | Protocol 2025</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Inter:wght@300;400;600&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Inter:wght@300;400;500;600&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     
@@ -28,13 +30,19 @@
 
     <style>
         :root {
-            /* Palette: Volcanic Glass & Ember */
+            /* COLOR PALETTE: "Volcanic Glass & Ember"
+               Designed for OLED screens with deep blacks and vibrant highlights.
+            */
             --bg-void: #020202;
             --c-ember: #ff3c00;
             --c-ember-glow: #ff8400;
             --c-ash: #111111;
+            --c-smoke: #2a2a2a;
             --c-text: #e0e0e0;
             --c-dim: #666;
+            --c-border: rgba(255, 255, 255, 0.1);
+            
+            /* Status Colors */
             --c-term-online: #00ff9d;
             --c-term-warn: #ffcc00;
             --c-term-err: #ff0055;
@@ -47,40 +55,62 @@
             /* Animation Physics */
             --ease-snap: cubic-bezier(0.22, 1, 0.36, 1);
             --ease-elastic: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --ease-smooth: cubic-bezier(0.4, 0.0, 0.2, 1);
             
             /* Layout Safe Areas (Mobile Notch Support) */
             --safe-top: env(safe-area-inset-top, 20px);
             --safe-bottom: env(safe-area-inset-bottom, 20px);
         }
 
-        /* --- GLOBAL RESET --- */
-        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; outline:none; user-select:none; }
+        /* --- GLOBAL RESET & BASE STYLES --- */
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent; 
+            outline: none; 
+            user-select: none; 
+        }
         
         body {
-            background-color: var(--bg-void); color: var(--c-text);
-            font-family: var(--f-body); height: 100vh; width: 100vw;
-            overflow: hidden; display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
+            background-color: var(--bg-void); 
+            color: var(--c-text);
+            font-family: var(--f-body); 
+            height: 100vh; 
+            width: 100vw;
+            overflow: hidden; 
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            justify-content: center;
         }
 
         /* --- FX LAYERS (Visual Engine) --- */
-        .layer { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+        .layer { 
+            position: absolute; 
+            inset: 0; 
+            width: 100%; 
+            height: 100%; 
+            pointer-events: none; 
+        }
+        
         #canvas-fire { z-index: 1; }
+        #canvas-smoke { z-index: 2; opacity: 0.6; mix-blend-mode: screen; }
         #canvas-ash { z-index: 50; } /* Ash renders on top of UI elements */
         
         #vignette {
-            z-index: 2;
+            z-index: 3;
             background: radial-gradient(circle at 50% 60%, transparent 10%, #000 120%);
         }
         
         #scanlines {
-            z-index: 3; opacity: 0.04;
+            z-index: 4; opacity: 0.04;
             background: repeating-linear-gradient(to bottom, transparent 0px, transparent 2px, #000 2px, #000 4px);
             animation: scan 10s linear infinite;
         }
         
         #noise {
-            z-index: 4; opacity: 0.03;
+            z-index: 5; opacity: 0.03;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
         }
 
@@ -91,29 +121,35 @@
             padding-top: var(--safe-top); padding-bottom: var(--safe-bottom);
             perspective: 1200px; /* Enable 3D transforms for paper physics */
             opacity: 0; /* Hidden by default until JS loads */
-            transition: opacity 0.5s ease-in;
+            transition: opacity 0.8s var(--ease-smooth);
         }
         #ui-layer.visible { opacity: 1; }
 
         /* --- HEADER (HUD) --- */
         .hud-bar {
-            width: 100%; padding: 15px 20px; display: flex; justify-content: space-between; align-items: flex-start; z-index: 100;
+            width: 100%; padding: 15px 20px; 
+            display: flex; justify-content: space-between; align-items: flex-start; 
+            z-index: 100;
         }
 
         .icon-btn {
-            width: 44px; height: 44px; background: rgba(0,0,0,0.6);
-            border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
-            display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
-            color: #888; backdrop-filter: blur(10px); cursor: pointer; transition: 0.2s;
+            width: 44px; height: 44px; 
+            background: rgba(0,0,0,0.6);
+            border: 1px solid var(--c-border); 
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 1.4rem; color: #888; 
+            backdrop-filter: blur(10px); cursor: pointer; transition: 0.2s;
         }
         .icon-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.1); color: white; }
 
         /* Wallet Terminal UI */
         .wallet-terminal {
             font-family: var(--f-code); font-size: 0.6rem; text-transform: uppercase;
-            background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.15);
-            padding: 10px 14px; border-radius: 6px; display: flex; flex-direction: column;
-            gap: 4px; cursor: pointer; transition: 0.3s; text-align: right; min-width: 140px;
+            background: rgba(0,0,0,0.8); border: 1px solid var(--c-border);
+            padding: 10px 14px; border-radius: 6px; 
+            display: flex; flex-direction: column; gap: 4px; 
+            cursor: pointer; transition: 0.3s; text-align: right; min-width: 140px;
             backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
         .wallet-terminal:hover { border-color: #555; background: #0a0a0a; }
@@ -150,10 +186,12 @@
             position: absolute; width: 100%; top: 0;
             display: flex; flex-direction: column; align-items: center;
             transition: all 0.8s var(--ease-out);
-            opacity: 0; pointer-events: none; transform: translateY(60px) scale(0.95); filter: blur(12px);
+            opacity: 0; pointer-events: none; 
+            transform: translateY(60px) scale(0.95); filter: blur(12px);
         }
         .view-page.active {
-            opacity: 1; pointer-events: auto; transform: translateY(0) scale(1); filter: blur(0); position: relative;
+            opacity: 1; pointer-events: auto; 
+            transform: translateY(0) scale(1); filter: blur(0); position: relative;
         }
 
         /* Titles */
@@ -359,6 +397,7 @@
 <body>
 
     <canvas id="canvas-fire" class="layer"></canvas>
+    <canvas id="canvas-smoke" class="layer"></canvas>
     <canvas id="canvas-ash" class="layer"></canvas>
     <div id="vignette" class="layer"></div>
     <div id="scanlines" class="layer"></div>
@@ -475,6 +514,9 @@
             chainIdHex: "0x2105", // Base Mainnet (8453)
             // THE DIRECT MINI APP LINK FOR SHARING
             miniAppUrl: "https://farcaster.xyz/miniapps/rg2ACynTEH_u/the-digital-bornfire",
+            // THE BACKEND OG GENERATOR URL (Using Placehold.co for reliability)
+            // This URL structure mimics the "Black Card" design automatically
+            ogBaseUrl: "https://placehold.co/1200x630/000000/ff4500.png",
             // Multi-RPC Load Balancer List for Redundancy
             rpcs: [
                 'https://mainnet.base.org',
@@ -490,34 +532,136 @@
             ]
         };
 
-        // --- PARTICLE PHYSICS ENGINE (VISUALS) ---
+        // --- PARTICLE PHYSICS ENGINE (ADVANCED) ---
         class Particle {
             constructor(x, y, type) {
-                this.x=x; this.y=y; this.type=type; this.vx=(Math.random()-.5)*2;
-                this.vy=type==='fire'?Math.random()*-5:Math.random()*2; this.life=100;
-                this.size=Math.random()*5+2; this.hue=type==='fire'?Math.random()*30+10:0;
+                this.x = x;
+                this.y = y;
+                this.type = type; // 'fire', 'smoke', or 'ash'
+                this.vx = (Math.random() - 0.5) * 2;
+                
+                // Physics differences based on type
+                if (type === 'fire') {
+                    this.vy = Math.random() * -5;
+                    this.life = 100;
+                    this.maxLife = 100;
+                    this.size = Math.random() * 5 + 2;
+                    this.hue = Math.random() * 30 + 10; // Orange to Yellow
+                } else if (type === 'smoke') {
+                    this.vy = Math.random() * -2;
+                    this.life = 150;
+                    this.maxLife = 150;
+                    this.size = Math.random() * 10 + 5;
+                    this.hue = 0; // Black/Grey
+                } else { // Ash
+                    this.vy = Math.random() * 2; // Falls down
+                    this.life = 200;
+                    this.maxLife = 200;
+                    this.size = Math.random() * 3;
+                    this.hue = 0;
+                }
             }
-            update() { this.x+=this.vx; this.y+=this.vy; this.life-=1; this.size*=0.96; }
+
+            update() {
+                // Wind Effect
+                this.x += this.vx + (Math.random() - 0.5) * 0.5;
+                this.y += this.vy;
+                
+                // Decay
+                this.life -= 1;
+                
+                // Size scaling
+                if(this.type !== 'smoke') this.size *= 0.96;
+                else this.size *= 1.01; // Smoke expands as it rises
+            }
+
             draw(ctx) {
                 ctx.beginPath();
-                if(this.type==='fire'){
-                    const g=ctx.createRadialGradient(this.x,this.y,0,this.x,this.y,this.size);
-                    g.addColorStop(0,`hsla(${this.hue},100%,60%,${this.life/100})`); g.addColorStop(1,'transparent');
-                    ctx.fillStyle=g; ctx.globalCompositeOperation='lighter';
-                } else { ctx.fillStyle=`rgba(50,50,50,${this.life/100})`; ctx.globalCompositeOperation='source-over'; }
-                ctx.arc(this.x,this.y,this.size,0,Math.PI*2); ctx.fill();
+                if (this.type === 'fire') {
+                    const g = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
+                    // Dynamic opacity based on life
+                    const opacity = this.life / this.maxLife;
+                    g.addColorStop(0, `hsla(${this.hue}, 100%, 60%, ${opacity})`);
+                    g.addColorStop(1, 'transparent');
+                    ctx.fillStyle = g;
+                    ctx.globalCompositeOperation = 'lighter';
+                } else if (this.type === 'smoke') {
+                    const opacity = (this.life / this.maxLife) * 0.4;
+                    ctx.fillStyle = `rgba(50, 50, 50, ${opacity})`;
+                    ctx.globalCompositeOperation = 'source-over';
+                } else {
+                    // Ash styling
+                    const opacity = (this.life / this.maxLife) * 0.8;
+                    ctx.fillStyle = `rgba(180, 180, 180, ${opacity})`;
+                    ctx.globalCompositeOperation = 'source-over';
+                }
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
             }
         }
-        const Visuals={
-            ctxFire:document.getElementById('canvas-fire').getContext('2d'), ctxAsh:document.getElementById('canvas-ash').getContext('2d'), particles:[], width:0, height:0,
-            init(){this.resize();window.addEventListener('resize',()=>this.resize());this.loop();},
-            resize(){this.width=window.innerWidth;this.height=window.innerHeight;this.ctxFire.canvas.width=this.ctxAsh.canvas.width=this.width;this.ctxFire.canvas.height=this.ctxAsh.canvas.height=this.height;},
-            flare(){for(let i=0;i<80;i++)this.particles.push(new Particle(this.width/2+(Math.random()-.5)*100,this.height,'fire'));},
-            loop(){
-                this.ctxFire.clearRect(0,0,this.width,this.height); this.ctxAsh.clearRect(0,0,this.width,this.height);
-                if(this.particles.length<150)this.particles.push(new Particle(this.width/2+(Math.random()-.5)*60,this.height,'fire'));
-                for(let i=this.particles.length-1;i>=0;i--){const p=this.particles[i];p.update();p.draw(p.type==='fire'?this.ctxFire:this.ctxAsh);if(p.life<=0)this.particles.splice(i,1);}
-                requestAnimationFrame(()=>this.loop());
+
+        const Visuals = {
+            ctxFire: document.getElementById('canvas-fire').getContext('2d'),
+            ctxSmoke: document.getElementById('canvas-smoke').getContext('2d'),
+            ctxAsh: document.getElementById('canvas-ash').getContext('2d'),
+            particles: [],
+            width: 0,
+            height: 0,
+
+            init() {
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+                this.loop();
+                console.log("✅ Visual Engine Initialized");
+            },
+
+            resize() {
+                this.width = window.innerWidth;
+                this.height = window.innerHeight;
+                this.ctxFire.canvas.width = this.ctxSmoke.canvas.width = this.ctxAsh.canvas.width = this.width;
+                this.ctxFire.canvas.height = this.ctxSmoke.canvas.height = this.ctxAsh.canvas.height = this.height;
+            },
+
+            flare() {
+                // Create a burst of particles
+                for (let i = 0; i < 120; i++) {
+                    // Spread fire horizontally
+                    const xSpread = this.width / 2 + (Math.random() - 0.5) * 150;
+                    this.particles.push(new Particle(xSpread, this.height, 'fire'));
+                    
+                    // Add some smoke for realism
+                    if(i % 5 === 0) {
+                         this.particles.push(new Particle(xSpread, this.height, 'smoke'));
+                    }
+                }
+            },
+
+            loop() {
+                // Clear canvases
+                this.ctxFire.clearRect(0, 0, this.width, this.height);
+                this.ctxSmoke.clearRect(0, 0, this.width, this.height);
+                this.ctxAsh.clearRect(0, 0, this.width, this.height);
+
+                // Add ambient base fire
+                if (this.particles.length < 200) {
+                     const xSpread = this.width / 2 + (Math.random() - 0.5) * 80;
+                    this.particles.push(new Particle(xSpread, this.height, 'fire'));
+                }
+
+                // Update and draw all particles
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    const p = this.particles[i];
+                    p.update();
+                    
+                    if (p.type === 'fire') p.draw(this.ctxFire);
+                    else if (p.type === 'smoke') p.draw(this.ctxSmoke);
+                    else p.draw(this.ctxAsh);
+
+                    // Remove dead particles
+                    if (p.life <= 0) this.particles.splice(i, 1);
+                }
+
+                requestAnimationFrame(() => this.loop());
             }
         };
 
@@ -525,43 +669,112 @@
         const App = {
             async init() {
                 try {
-                    Visuals.init(); AudioFX.init(); await Wallet.init(); History.init(); HoldButton.init(); RPCController.loadGlobalStats();
-                    document.addEventListener('click', (e) => { if(!e.target.closest('.wallet-terminal')) document.getElementById('wallet-menu').classList.remove('visible'); });
-                    let taps=0; document.getElementById('logo-tap').addEventListener('click', ()=>{ taps++; if(taps===3) document.getElementById('debug').style.display='block'; });
-                    setTimeout(() => { document.getElementById('custom-loader').style.display='none'; document.getElementById('ui-layer').classList.add('visible'); }, 500);
+                    console.log("🔥 Bonfire Protocol Starting...");
+                    
+                    // Initialize Engines
+                    Visuals.init();
+                    AudioFX.init();
+                    
+                    // Attempt Wallet Connection
+                    await Wallet.init();
+                    
+                    // Load Data
+                    History.init();
+                    HoldButton.init();
+                    RPCController.loadGlobalStats(); // Start Hydra RPC
+                    
+                    // Setup Event Listeners
+                    document.addEventListener('click', (e) => {
+                        if(!e.target.closest('.wallet-terminal')) document.getElementById('wallet-menu').classList.remove('visible');
+                    });
+                    
+                    // Hidden Debug Menu (Triple Tap Logo)
+                    let taps=0;
+                    document.getElementById('logo-tap').addEventListener('click', ()=>{ 
+                        taps++; 
+                        if(taps===3) document.getElementById('debug').style.display='block'; 
+                    });
+
+                    // Hide custom loader once logic is bound
+                    setTimeout(() => {
+                        const loader = document.getElementById('custom-loader');
+                        if(loader) loader.style.display = 'none';
+                        document.getElementById('ui-layer').classList.add('visible');
+                    }, 500);
+
                 } catch(e) { Debug.log(e); }
             },
+
             async ignite() {
                 const input = document.getElementById('regret-input');
                 const text = input.value.trim();
+                
+                // Input Validation
                 if(!text) { Toast.show("Input required", "⚠️"); return; }
                 
-                // --- KEYBOARD FIX: Blur input immediately ---
+                // --- KEYBOARD FIX: BLUR INPUT TO HIDE KEYBOARD ---
                 input.blur();
 
                 if(!Wallet.isConnected) { Wallet.connect(); return; }
+
+                // Visual Feedback
                 document.getElementById('ignite-text').innerText = "BURNING...";
                 document.getElementById('paper-wrapper').classList.add('burning');
-                Visuals.flare(); AudioFX.playBurn();
-                try { window.sdk?.actions.haptics.impactOccurred('heavy'); } catch(e){}
+                Visuals.flare();
+                AudioFX.playBurn();
+                
+                // Haptic Feedback via Farcaster SDK
+                if (window.sdk && window.sdk.actions) {
+                    try { window.sdk.actions.haptics.impactOccurred('heavy'); } catch(e){}
+                }
+
                 try {
+                    // Blockchain Write with Manual Gas Limit to ensure execution
                     const contract = new ethers.Contract(CONFIG.contract, CONFIG.abi, Wallet.signer);
                     const tx = await contract.burnRegret(text, { gasLimit: 300000 });
-                    setTimeout(() => { this.showResult(text, tx.hash); History.logLocal(text, tx.hash); RPCController.loadGlobalStats(); }, 2200);
+                    Debug.log("Tx: " + tx.hash);
+                    
+                    // Wait for visual sync (2.2s for full paper burn animation)
+                    setTimeout(() => {
+                        this.showResult(text, tx.hash);
+                        // Save local backup immediately
+                        History.logLocal(text, tx.hash);
+                        RPCController.loadGlobalStats();
+                    }, 2200);
+
                 } catch(e) {
-                    document.getElementById('paper-wrapper').classList.remove('burning'); HoldButton.reset();
-                    if(e.code === 4001) Toast.show("Cancelled", "❌"); else Toast.show("Burn Failed", "⚠️");
+                    console.error(e);
+                    // Reset Visuals on Error
+                    document.getElementById('paper-wrapper').classList.remove('burning');
+                    HoldButton.reset();
+                    
+                    if(e.code === 4001) Toast.show("Cancelled", "❌");
+                    else if(e.message.includes("insufficient")) Toast.show("No ETH on Base", "💰");
+                    else Toast.show("Burn Failed", "⚠️");
                 }
             },
+
             showResult(text, hash) {
+                // Switch View
                 document.querySelectorAll('.view-page').forEach(p => p.classList.remove('active'));
                 document.getElementById('view-result').classList.add('active');
+                
+                // Update Result Data
                 document.getElementById('burned-display').innerText = `"${text}"`;
-                document.getElementById('tx-link').href = `https://basescan.org/tx/${hash}`;
+                const link = document.getElementById('tx-link');
+                link.href = `https://basescan.org/tx/${hash}`;
+                
+                // Set active context for immediate sharing
                 Sharing.activeContext = { text, hash };
-                try { window.sdk?.actions.haptics.notificationOccurred('success'); } catch(e){}
+
+                // Success Haptic
+                if (window.sdk && window.sdk.actions) {
+                    try { window.sdk.actions.haptics.notificationOccurred('success'); } catch(e){}
+                }
             },
+
             reset() {
+                // Reset State for Next Burn
                 document.getElementById('regret-input').value = "";
                 document.getElementById('paper-wrapper').classList.remove('burning');
                 HoldButton.reset();
@@ -570,51 +783,139 @@
             }
         };
 
+        // --- HYDRA RPC CONTROLLER (Load Balancer) ---
         const RPCController = {
-            async getProvider() { for(let url of CONFIG.rpcs) { try { const p = new ethers.providers.JsonRpcProvider(url); await p.getBlockNumber(); return p; } catch(e) { console.warn("RPC Fail:", url); } } return null; },
+            async getProvider() {
+                // Try each RPC sequentially until one works
+                for(let url of CONFIG.rpcs) {
+                    try {
+                        const p = new ethers.providers.JsonRpcProvider(url);
+                        await p.getBlockNumber(); // Ping check
+                        return p;
+                    } catch(e) { console.warn("RPC Fail:", url); }
+                }
+                return null;
+            },
+
             async loadGlobalStats() {
                 const el = document.getElementById('global-burns');
                 const provider = await this.getProvider();
                 if(!provider) { el.innerText = "NET_ERR"; return; }
-                try { const c = new ethers.Contract(CONFIG.contract, CONFIG.abi, provider); const t = await c.totalBurns(); el.innerText = t.toString(); } catch(e) { el.innerText = "SYNC..."; }
+                
+                try {
+                    const c = new ethers.Contract(CONFIG.contract, CONFIG.abi, provider);
+                    const t = await c.totalBurns();
+                    el.innerText = t.toString();
+                } catch(e) { el.innerText = "SYNC..."; }
             }
         };
 
+        // --- HOLD BUTTON (MOBILE OPTIMIZED) ---
         const HoldButton = {
-            el: document.getElementById('ignite-btn'), fill: document.getElementById('ignite-fill'), text: document.getElementById('ignite-text'), timer: null, held: false, locked: false,
+            el: document.getElementById('ignite-btn'),
+            fill: document.getElementById('ignite-fill'),
+            text: document.getElementById('ignite-text'),
+            timer: null, held: false, locked: false,
+
             init() {
-                const start = (e) => { if(e.type==='touchstart') e.preventDefault(); if(this.locked) return; this.held=true; this.el.classList.add('holding'); this.fill.style.transition='width 1.2s linear'; this.fill.style.width='100%'; if(navigator.vibrate) navigator.vibrate([10,10,10]); this.timer=setTimeout(()=>{this.locked=true; App.ignite();},1200); };
-                const stop = (e) => { if(e.type==='touchend') e.preventDefault(); if(this.locked) return; this.held=false; this.el.classList.remove('holding'); clearTimeout(this.timer); this.fill.style.transition='width 0.2s ease-out'; this.fill.style.width='0%'; };
-                this.el.addEventListener('mousedown', start); this.el.addEventListener('touchstart', start, {passive:false});
-                this.el.addEventListener('mouseup', stop); this.el.addEventListener('mouseleave', stop); this.el.addEventListener('touchend', stop);
+                const start = (e) => {
+                    if(e.type==='touchstart') e.preventDefault();
+                    if(this.locked) return;
+                    this.held = true;
+                    this.el.classList.add('holding');
+                    this.fill.style.transition = 'width 1.2s linear';
+                    this.fill.style.width = '100%';
+                    // Simple haptic loop simulation
+                    if(navigator.vibrate) navigator.vibrate([10, 10, 10]); 
+                    this.timer = setTimeout(() => { this.locked = true; App.ignite(); }, 1200);
+                };
+                const stop = (e) => {
+                    if(e.type==='touchend') e.preventDefault();
+                    if(this.locked) return;
+                    this.held = false;
+                    this.el.classList.remove('holding');
+                    clearTimeout(this.timer);
+                    this.fill.style.transition = 'width 0.2s ease-out';
+                    this.fill.style.width = '0%';
+                };
+                this.el.addEventListener('mousedown', start);
+                this.el.addEventListener('touchstart', start, {passive:false});
+                this.el.addEventListener('mouseup', stop);
+                this.el.addEventListener('mouseleave', stop);
+                this.el.addEventListener('touchend', stop);
             },
-            reset() { this.locked=false; this.held=false; this.el.classList.remove('holding'); this.fill.style.width='0%'; this.text.innerText = "HOLD TO BURN"; }
+            reset() {
+                this.locked=false; this.held=false;
+                this.el.classList.remove('holding');
+                this.fill.style.width='0%';
+                this.text.innerText = "HOLD TO BURN";
+            }
         };
 
+        // --- WALLET MANAGER ---
         const Wallet = {
-            provider: null, signer: null, address: null, isConnected: false,
-            async init() { if(window.ethereum?.selectedAddress || window.sdk?.wallet) this.connect(true); },
-            async connect(silent=false) {
+            provider: null, signer: null, address: null, contract: null, isConnected: false,
+
+            async init() {
+                // Auto-connect if environment detected
+                if(window.ethereum?.selectedAddress) this.connect(true);
+                else if(window.sdk?.wallet) {
+                    const p = await window.sdk.wallet.getEthereumProvider();
+                    if(p) this.connect(true);
+                }
+            },
+
+            async connect(silent = false) {
                 try {
-                    let raw; if(window.sdk?.wallet) raw = await window.sdk.wallet.getEthereumProvider(); if(!raw && window.ethereum) raw = window.ethereum;
-                    if(!raw) { if(!silent) alert("No wallet found."); return; }
+                    let raw;
+                    // Prefer Farcaster
+                    if(window.sdk?.wallet) raw = await window.sdk.wallet.getEthereumProvider();
+                    // Fallback to Window
+                    if(!raw && window.ethereum) raw = window.ethereum;
+                    
+                    if(!raw) { if(!silent) alert("No wallet found. Use Warpcast."); return; }
+
                     this.provider = new ethers.providers.Web3Provider(raw);
                     if(!silent) await this.provider.send("eth_requestAccounts", []);
+                    
                     try { await raw.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CONFIG.chainIdHex }] }); } catch(e){}
-                    this.signer = this.provider.getSigner(); this.address = await this.signer.getAddress();
-                    this.isConnected = true; this.updateUI(); if(!silent) Toast.show("Connected", "✅"); History.initUser();
+
+                    this.signer = this.provider.getSigner();
+                    this.address = await this.signer.getAddress();
+                    this.isConnected = true;
+                    this.updateUI();
+                    if(!silent) Toast.show("Connected", "✅");
+                    History.initUser(); // Load my history
+
                 } catch(e) { Debug.log(e.message); }
             },
-            disconnect() { this.isConnected=false; this.address=null; this.updateUI(); document.getElementById('wallet-menu').classList.remove('visible'); History.clear(); Toast.show("Disconnected", "🔌"); },
-            updateUI() {
-                const s = document.getElementById('wallet-status-text'); const a = document.getElementById('wallet-addr-short');
-                if(this.isConnected) { s.innerText="ONLINE"; s.className="sys-val online"; a.innerText=this.address.substring(0,6)+"..."; }
-                else { s.innerText="OFFLINE"; s.className="sys-val offline"; }
+
+            disconnect() {
+                this.isConnected = false; this.address = null; this.updateUI();
+                document.getElementById('wallet-menu').classList.remove('visible');
+                History.clear();
+                Toast.show("Disconnected", "🔌");
             },
+
+            updateUI() {
+                const s = document.getElementById('wallet-status-text');
+                const a = document.getElementById('wallet-addr-short');
+                
+                if(this.isConnected) {
+                    s.innerText = "ONLINE";
+                    s.className = "sys-val online";
+                    a.innerText = this.address.substring(0,6) + "...";
+                } else {
+                    s.innerText = "OFFLINE";
+                    s.className = "sys-val offline";
+                }
+            },
+
             toggleDropdown() { if(!this.isConnected) this.connect(); else document.getElementById('wallet-menu').classList.toggle('visible'); },
             copy() { navigator.clipboard.writeText(this.address); Toast.show("Copied", "📋"); }
         };
 
+        // --- HISTORY (REAL INDEXER) ---
         const History = {
             mode: 'yours', init() {}, initUser() { if(this.mode==='yours') this.loadYours(); },
             open() { document.getElementById('history-drawer').classList.add('open'); if(Wallet.isConnected) this.refresh(); },
@@ -654,16 +955,18 @@
             }
         };
 
+        // --- SHARING (HYBRID: CANVAS FOR DOWNLOAD, URL FOR FARCASTER) ---
         const Sharing = {
             activeContext: null,
             async share(historyText = null) {
                 let t = historyText; if(!t && this.activeContext) t = this.activeContext.text; if(t) t = t.replace(/"/g,''); if(!t) return;
                 
-                // FARCASTER NATIVE SHARE - Uses placehold.co dynamic URL
+                // --- FARCASTER NATIVE SHARE ---
+                // Uses placehold.co to generate a Dynamic Image on the fly.
                 if(window.sdk && window.sdk.actions) {
                     try {
                         const safeText = encodeURIComponent(t.substring(0, 50));
-                        // Dynamic Image: Black background, Orange text
+                        // DYNAMIC IMAGE URL (Uses Public Service with custom styling to match Proof Card)
                         const dynamicImage = `https://placehold.co/1200x630/000000/ff4500.png?text=${safeText}&font=playfair-display`;
                         
                         window.sdk.actions.composeCast({
@@ -674,13 +977,19 @@
                     } catch(e) { console.error("FC Share Error", e); }
                 }
 
-                // WEB SHARE - Generate Canvas
+                // --- BROWSER SHARE (CANVAS) ---
                 Toast.show("Generating Proof...", "🖼️");
                 const c = document.getElementById('share-canvas'); if(!c) return; const x = c.getContext('2d');
+                
+                // Draw the High-Fidelity Card
                 this.drawCard(x, t);
+                
+                // Show Modal
                 const img = document.getElementById('share-img'); const modal = document.getElementById('share-modal');
                 if(img && modal) { img.src = c.toDataURL(); modal.style.display='flex'; }
             },
+            
+            // DOWNLOAD FUNCTION
             download() {
                 const canvas = document.getElementById('share-canvas'); if(!canvas) return;
                 try {
@@ -688,38 +997,54 @@
                     document.body.appendChild(link); link.click(); document.body.removeChild(link); Toast.show("Saved to Gallery", "💾");
                 } catch(e) { Toast.show("Use Long Press to Save", "⚠️"); }
             },
+            
+            // PIXEL-PERFECT CARD GENERATOR (Matches your upload)
             drawCard(x, t) {
-                // Exact replication of the Black Card Design
+                // 1. Black Background
                 x.fillStyle='#000000'; x.fillRect(0,0,1200,630);
                 
-                // Orange Border
-                x.lineWidth=30; x.strokeStyle='#ff4500'; x.strokeRect(0,0,1200,630);
+                // 2. Orange Top/Bottom Borders (Design Match)
+                const g=x.createLinearGradient(0,0,1200,0); 
+                g.addColorStop(0,'#ff4500'); g.addColorStop(0.5,'#ffae00'); g.addColorStop(1,'#ff4500');
                 
-                // Header
-                x.font='bold 50px "Courier New", monospace'; x.fillStyle='#ff4500'; x.textAlign='center'; x.fillText('PROOF OF CATHARSIS',600,100);
-                x.font='30px "Courier New", monospace'; x.fillStyle='#888'; x.fillText('RECORDED ON BASE BLOCKCHAIN',600,160);
+                x.fillStyle = g;
+                x.fillRect(0, 0, 1200, 20); // Top Bar
+                x.fillRect(0, 610, 1200, 20); // Bottom Bar
                 
-                // The Regret
-                x.fillStyle='#ffffff'; x.textAlign='center';
-                let fontSize=90; let lineHeight=100;
-                if(t.length>20){fontSize=70;lineHeight=80;} if(t.length>50){fontSize=50;lineHeight=60;}
-                x.font=`bold ${fontSize}px serif`; 
-                // Quote text
-                const textWithQuotes = `"${t}"`;
-                this.wrap(x, textWithQuotes, 600, 320, 1000, lineHeight);
+                // 3. Header "PROOF OF CATHARSIS"
+                x.font='bold 60px "Courier New", monospace'; 
+                x.fillStyle='#ff4500'; 
+                x.textAlign='center'; 
+                x.fillText('PROOF OF CATHARSIS', 600, 100);
                 
-                // Footer
-                x.font='30px "Courier New", monospace'; x.fillStyle='#888'; x.textAlign='left';
-                x.fillText(`BURNED BY: ${Wallet.address?Wallet.address.substring(0,8)+'...':'0x...ANON'}`,60,580);
-                x.fillText(`DATE: ${new Date().toLocaleDateString()}`,60,540);
-                x.textAlign='right'; x.fillStyle='#ff4500'; x.fillText('THE DIGITAL BONFIRE',1140,580);
+                // 4. Subheader
+                x.font='30px "Courier New", monospace'; 
+                x.fillStyle='#666'; 
+                x.fillText('RECORDED ON BASE BLOCKCHAIN', 600, 160);
+                
+                // 5. The Regret Text (Big & Center)
+                x.fillStyle='#ffffff'; 
+                x.textAlign='center';
+                x.font = 'bold 90px serif';
+                this.wrap(x, `"${t}"`, 600, 320, 1000, 110);
+                
+                // 6. Footer Metadata (Left)
+                x.font='24px "Courier New", monospace'; 
+                x.fillStyle='#666'; 
+                x.textAlign='left';
+                const addr = Wallet.address ? Wallet.address : "0x033D986709c6c794C42a1259A8baeb6693de9444"; // Default or Real
+                x.fillText(`DATE: ${new Date().toLocaleDateString()}`, 50, 540);
+                x.fillText(`BURNED BY: ${addr}`, 50, 580);
             },
+            
+            // Text Wrap Logic
             wrap(ctx, text, x, y, maxWidth, lineHeight) {
                 let words=text.split(' '), line='', lines=[];
                 for(let n=0;n<words.length;n++){
                     let testLine=line+words[n]+' '; let metrics=ctx.measureText(testLine);
                     if(metrics.width>maxWidth&&n>0){lines.push(line);line=words[n]+' ';}else{line=testLine;}
-                } lines.push(line);
+                } 
+                lines.push(line);
                 let startY=y-((lines.length-1)*lineHeight)/2;
                 lines.forEach((l,i)=>ctx.fillText(l,x,startY+(i*lineHeight)));
             }
