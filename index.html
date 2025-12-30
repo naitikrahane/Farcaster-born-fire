@@ -28,7 +28,7 @@
 
     <style>
         :root {
-            /* Palette: Volcanic Glass & Ember */
+            /* Color Palette */
             --bg-void: #020202;
             --c-ember: #ff3c00;
             --c-ember-glow: #ff8400;
@@ -39,21 +39,21 @@
             --c-term-warn: #ffcc00;
             --c-term-err: #ff0055;
             
-            /* Typography */
+            /* Fonts */
             --f-head: 'Cinzel', serif;
             --f-body: 'Inter', sans-serif;
             --f-code: 'Space Mono', monospace;
             
-            /* Animation Physics */
+            /* Motion */
             --ease-snap: cubic-bezier(0.22, 1, 0.36, 1);
             --ease-elastic: cubic-bezier(0.34, 1.56, 0.64, 1);
             
-            /* Layout Safe Areas (Mobile Notch Support) */
+            /* Safe Areas */
             --safe-top: env(safe-area-inset-top, 20px);
             --safe-bottom: env(safe-area-inset-bottom, 20px);
         }
 
-        /* --- GLOBAL RESET --- */
+        /* RESET */
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; outline:none; user-select:none; }
         
         body {
@@ -63,10 +63,10 @@
             align-items: center; justify-content: center;
         }
 
-        /* --- FX LAYERS (Visual Engine) --- */
+        /* VISUAL LAYERS */
         .layer { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
         #canvas-fire { z-index: 1; }
-        #canvas-ash { z-index: 50; } /* Ash renders on top of UI elements */
+        #canvas-ash { z-index: 50; }
         
         #vignette {
             z-index: 2;
@@ -84,18 +84,16 @@
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
         }
 
-        /* --- UI CONTAINER --- */
+        /* UI LAYOUT */
         #ui-layer {
             position: relative; z-index: 10; width: 100%; height: 100%;
             display: flex; flex-direction: column;
             padding-top: var(--safe-top); padding-bottom: var(--safe-bottom);
-            perspective: 1200px; /* Enable 3D transforms for paper physics */
-            opacity: 0; /* Hidden by default until JS loads */
-            transition: opacity 0.5s ease-in;
+            perspective: 1200px;
+            opacity: 0; transition: opacity 0.5s ease-in;
         }
         #ui-layer.visible { opacity: 1; }
 
-        /* --- HEADER (HUD) --- */
         .hud-bar {
             width: 100%; padding: 15px 20px; display: flex; justify-content: space-between; align-items: flex-start; z-index: 100;
         }
@@ -108,7 +106,7 @@
         }
         .icon-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.1); color: white; }
 
-        /* Wallet Terminal UI */
+        /* WALLET UI */
         .wallet-terminal {
             font-family: var(--f-code); font-size: 0.6rem; text-transform: uppercase;
             background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.15);
@@ -123,7 +121,6 @@
         .sys-val.online { color: var(--c-term-online); text-shadow: 0 0 8px rgba(0,255,157,0.4); }
         .sys-val.offline { color: var(--c-ember); animation: blink 1.5s infinite; }
 
-        /* Dropdown */
         #wallet-menu {
             position: absolute; top: 75px; right: 20px; width: 180px;
             background: #0a0a0a; border: 1px solid #333; border-radius: 4px;
@@ -140,7 +137,7 @@
         .menu-opt:hover { background: #151515; color: white; }
         .menu-opt.danger { color: #ff4444; border-top: 1px solid #222; }
 
-        /* --- VIEW CONTROLLER (Page Transitions) --- */
+        /* VIEW TRANSITIONS */
         .view-container {
             flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
             width: 100%; max-width: 460px; margin: 0 auto; position: relative;
@@ -156,7 +153,7 @@
             opacity: 1; pointer-events: auto; transform: translateY(0) scale(1); filter: blur(0); position: relative;
         }
 
-        /* Titles */
+        /* TEXT */
         h1.logo {
             font-family: var(--f-head); font-size: 3.5rem; color: #fff;
             text-transform: uppercase; line-height: 0.85; margin-bottom: 40px;
@@ -167,16 +164,14 @@
             letter-spacing: 0.6em; opacity: 0.5; margin-top: 15px; color: var(--c-ember);
         }
 
-        /* --- PAPER PHYSICS MODULE --- */
+        /* PHYSICS */
         .burn-stage {
             width: 100%; position: relative; perspective: 1200px; margin-bottom: 30px;
         }
         
-        /* The "Paper" Container */
         .paper-input-wrapper {
-            width: 100%; background: #e3dcd2; /* Parchment Color */
-            padding: 4px; /* Border thickness */
-            box-shadow: 0 30px 80px rgba(0,0,0,0.8);
+            width: 100%; background: #e3dcd2; /* Parchment */
+            padding: 4px; box-shadow: 0 30px 80px rgba(0,0,0,0.8);
             transform-origin: center bottom;
             transition: transform 0.8s ease-in-out, opacity 0.8s, filter 0.8s;
             position: relative;
@@ -189,7 +184,6 @@
             border: 1px solid #c0b090;
         }
 
-        /* Burning State Animation */
         .paper-input-wrapper.burning {
             animation: paperBurnSequence 2.2s forwards cubic-bezier(0.6, 0.04, 0.98, 0.335);
         }
@@ -202,7 +196,6 @@
             100% { transform: scale(0) rotate(15deg) translateY(-100px); opacity: 0; }
         }
 
-        /* Input Styling */
         textarea#regret-input {
             width: 100%; background: transparent; border: none; resize: none;
             font-family: var(--f-head); font-size: 1.6rem; font-weight: 700; color: #1a1a1a;
@@ -213,7 +206,7 @@
             font-size: 1rem; font-style: italic; font-weight: 400; 
         }
 
-        /* --- HOLD-TO-BURN BUTTON --- */
+        /* BUTTONS */
         .ignite-wrapper {
             margin-top: 10px; width: 100%; height: 64px;
             background: #0f0f0f; border: 1px solid #333;
@@ -222,7 +215,6 @@
             transform: scale(1); transition: transform 0.1s;
         }
         .ignite-wrapper:active { transform: scale(0.98); border-color: #555; }
-        /* Shake effect */
         .ignite-wrapper.holding { animation: vibration 0.1s linear infinite; border-color: var(--c-ember); }
 
         .ignite-fill {
@@ -237,14 +229,13 @@
         }
         .ignite-wrapper:active .ignite-label { color: white; }
 
-        /* --- GLOBAL STATS --- */
         .stats-ticker {
             margin-top: 25px; font-family: var(--f-code); font-size: 0.65rem; color: #444;
             display: flex; gap: 15px; justify-content: center; text-transform: uppercase;
         }
         .stats-ticker span { color: #666; }
 
-        /* --- RESULT CARD --- */
+        /* CARDS */
         .ash-card {
             background: #080808; border: 1px solid #222; width: 100%; padding: 50px 25px;
             text-align: center; box-shadow: 0 0 100px rgba(0,0,0,0.9);
@@ -264,7 +255,6 @@
             text-decoration: line-through; text-decoration-color: var(--c-ember);
             text-decoration-thickness: 2px; line-height: 1.3;
         }
-        
         .tx-proof {
             display: inline-block; font-family: var(--f-code); font-size: 0.7rem; color: var(--c-ember);
             border-bottom: 1px dotted var(--c-ember); padding-bottom: 2px; text-decoration: none;
@@ -278,7 +268,7 @@
         }
         .btn-ghost:active { background: #222; color: white; border-color: #666; }
 
-        /* --- HISTORY DRAWER (Bottom Sheet) --- */
+        /* DRAWERS */
         #history-drawer { position: fixed; inset: 0; z-index: 200; pointer-events: none; }
         .drawer-bg { position: absolute; inset: 0; background: rgba(0,0,0,0.8); opacity: 0; transition: 0.4s; }
         .drawer-panel {
@@ -311,7 +301,7 @@
         .log-share-btn { border: 1px solid #333; padding: 4px 10px; border-radius: 4px; background: transparent; color: #888; cursor: pointer; font-size: 0.6rem; text-transform: uppercase; font-family: var(--f-code); transition:0.2s; }
         .log-share-btn:hover { border-color: var(--c-ember); color: var(--c-ember); background:rgba(255,60,0,0.1); }
 
-        /* --- TOAST & MODAL --- */
+        /* MODALS */
         #toast {
             position: fixed; top: 120px; left: 50%; transform: translateX(-50%) translateY(-20px);
             background: #111; border: 1px solid #333; padding: 12px 24px; border-radius: 50px;
@@ -968,9 +958,12 @@
                 // THIS IS WHERE WE INJECT THE CORRECT MINI APP URL
                 if(window.sdk && window.sdk.actions) {
                     try {
+                        const safeText = encodeURIComponent(t.substring(0, 50));
+                        const dynamicImage = `https://placehold.co/1200x630/000000/ff4500.png?text=${safeText}&font=playfair-display`;
+                        
                         window.sdk.actions.composeCast({
                             text: `I just burned "${t}" on-chain in the Digital Bonfire.\n\nLeaving it in 2025. 🔥`,
-                            embeds: [CONFIG.miniAppUrl]  // <--- DEEP LINK
+                            embeds: [dynamicImage, CONFIG.miniAppUrl]
                         });
                         return;
                     } catch(e) { console.error("FC Share Error", e); }
