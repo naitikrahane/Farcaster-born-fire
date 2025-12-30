@@ -7,8 +7,12 @@
     <meta name="description" content="Immutable Catharsis. Burn your 2025 regrets on the Base Blockchain.">
     
     <meta property="og:title" content="The Digital Bonfire">
+    <meta property="og:site_name" content="The Digital Bonfire Protocol">
     <meta property="og:description" content="Leave it in 2025. Burn it on-chain.">
+    <meta property="og:url" content="https://farcaster.xyz/miniapps/rg2ACynTEH_u/the-digital-bornfire">
+    
     <meta property="og:image" content="https://placehold.co/1200x630/020202/ff4500.png?text=THE+DIGITAL+BONFIRE&font=playfair-display">
+    
     <meta name="fc:frame" content="vNext">
     <meta name="fc:frame:image" content="https://placehold.co/1200x630/020202/ff4500.png?text=THE+DIGITAL+BONFIRE&font=playfair-display">
     <meta name="fc:frame:button:1" content="Begin Ritual">
@@ -321,14 +325,22 @@
             position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 300;
             display: none; align-items: center; justify-content: center; padding: 20px; flex-direction: column;
         }
-        #share-img { max-width: 100%; border: 1px solid #333; box-shadow: 0 0 50px black; border-radius: 8px; }
-        #close-modal-btn { margin-top: 20px; padding: 10px 20px; border: 1px solid #333; background: #111; color: #888; font-family: var(--f-code); font-size: 0.7rem; border-radius: 20px; cursor: pointer; }
+        #share-img { max-width: 100%; border: 1px solid #333; box-shadow: 0 0 50px black; border-radius: 8px; margin-bottom: 20px; }
+        
+        .modal-btn-row { display: flex; gap: 15px; width: 100%; justify-content: center; }
+        
+        #close-modal-btn { padding: 10px 20px; border: 1px solid #333; background: #111; color: #888; font-family: var(--f-code); font-size: 0.7rem; border-radius: 20px; cursor: pointer; transition: 0.2s; }
+        #close-modal-btn:hover { background: #222; color: #fff; }
+
+        #download-btn { padding: 10px 20px; border: 1px solid var(--c-ember); background: rgba(255,60,0,0.1); color: var(--c-ember); font-family: var(--f-code); font-size: 0.7rem; border-radius: 20px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 6px; }
+        #download-btn:hover { background: var(--c-ember); color: #fff; }
 
         @keyframes vibration { 0% { transform: translate(0, 0); } 20% { transform: translate(-1px, 1px); } 40% { transform: translate(1px, -1px); } 60% { transform: translate(-1px, -1px); } 80% { transform: translate(1px, 1px); } 100% { transform: translate(0, 0); } }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
         @keyframes scan { from { background-position: 0 0; } to { background-position: 0 100%; } }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         .hidden { display: none !important; }
         #share-canvas { position: fixed; top: -9999px; visibility: hidden; }
@@ -338,9 +350,10 @@
         /* CUSTOM LOADER */
         #custom-loader {
             position: fixed; inset: 0; background: #020202; z-index: 9999;
-            display: flex; justify-content: center; align-items: center;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
             font-family: var(--f-code); color: #444; font-size: 0.8rem; letter-spacing: 2px;
         }
+        .loader-ring { width: 40px; height: 40px; border: 2px solid #333; border-top-color: var(--c-ember); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
     </style>
 </head>
 <body>
@@ -427,10 +440,14 @@
     </div>
 
     <canvas id="share-canvas" width="1200" height="630"></canvas>
+    
     <div id="share-modal">
         <img id="share-img">
-        <p style="color:#888; font-family:var(--f-code); font-size:0.7rem; margin-top:20px;">LONG PRESS TO SAVE IMAGE</p>
-        <button id="close-modal-btn" onclick="document.getElementById('share-modal').style.display='none'">CLOSE</button>
+        <div class="modal-btn-row">
+            <button id="download-btn" onclick="Sharing.download()">⬇ SAVE IMAGE</button>
+            <button id="close-modal-btn" onclick="document.getElementById('share-modal').style.display='none'">CLOSE</button>
+        </div>
+        <p style="color:#444; font-family:var(--f-code); font-size:0.6rem; margin-top:15px;">LONG PRESS IMAGE IF BUTTON FAILS</p>
     </div>
 
     <div id="toast">
@@ -444,7 +461,10 @@
         <div id="onchat-widget" style="height:calc(100% - 50px);"></div>
     </div>
     
-    <div id="custom-loader">INITIALIZING PROTOCOL...</div>
+    <div id="custom-loader">
+        <div class="loader-ring"></div>
+        <span>INITIALIZING PROTOCOL...</span>
+    </div>
     
     <div id="debug"></div>
 
@@ -468,6 +488,100 @@
                 "function totalBurns() view returns (uint256)",
                 "event Burned(address indexed user, string regret, uint256 timestamp)"
             ]
+        };
+
+        // --- PARTICLE PHYSICS ENGINE (VISUALS) ---
+        class Particle {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.type = type; // 'fire' or 'ash'
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = type === 'fire' ? Math.random() * -5 : Math.random() * 2;
+                this.life = 100;
+                this.size = Math.random() * 5 + 2;
+                this.hue = type === 'fire' ? Math.random() * 30 + 10 : 0; // Orange or Black
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life -= 1;
+                this.size *= 0.96;
+            }
+
+            draw(ctx) {
+                ctx.beginPath();
+                if (this.type === 'fire') {
+                    const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
+                    gradient.addColorStop(0, `hsla(${this.hue}, 100%, 60%, ${this.life / 100})`);
+                    gradient.addColorStop(1, 'transparent');
+                    ctx.fillStyle = gradient;
+                    ctx.globalCompositeOperation = 'lighter';
+                } else {
+                    ctx.fillStyle = `rgba(50, 50, 50, ${this.life / 100})`;
+                    ctx.globalCompositeOperation = 'source-over';
+                }
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        const Visuals = {
+            ctxFire: document.getElementById('canvas-fire').getContext('2d'),
+            ctxAsh: document.getElementById('canvas-ash').getContext('2d'),
+            particles: [],
+            width: 0,
+            height: 0,
+
+            init() {
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+                this.loop();
+            },
+
+            resize() {
+                this.width = window.innerWidth;
+                this.height = window.innerHeight;
+                this.ctxFire.canvas.width = this.ctxAsh.canvas.width = this.width;
+                this.ctxFire.canvas.height = this.ctxAsh.canvas.height = this.height;
+            },
+
+            flare() {
+                for (let i = 0; i < 80; i++) {
+                    this.particles.push(new Particle(
+                        this.width / 2 + (Math.random() - 0.5) * 100,
+                        this.height,
+                        'fire'
+                    ));
+                }
+            },
+
+            loop() {
+                this.ctxFire.clearRect(0, 0, this.width, this.height);
+                this.ctxAsh.clearRect(0, 0, this.width, this.height);
+
+                // Add ambient fire
+                if (this.particles.length < 150) {
+                    this.particles.push(new Particle(
+                        this.width / 2 + (Math.random() - 0.5) * 60,
+                        this.height,
+                        'fire'
+                    ));
+                }
+
+                // Update particles
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    const p = this.particles[i];
+                    p.update();
+                    if (p.type === 'fire') p.draw(this.ctxFire);
+                    else p.draw(this.ctxAsh);
+
+                    if (p.life <= 0) this.particles.splice(i, 1);
+                }
+
+                requestAnimationFrame(() => this.loop());
+            }
         };
 
         // --- APP CONTROLLER ---
@@ -831,7 +945,7 @@
             }
         };
 
-        // --- SHARING (AUTO OPTIMIZED TYPOGRAPHY & DEEP LINK) ---
+        // --- SHARING (DEEP LINKING + DOWNLOAD) ---
         const Sharing = {
             activeContext: null,
 
@@ -856,20 +970,51 @@
                     try {
                         window.sdk.actions.composeCast({
                             text: `I just burned "${t}" on-chain in the Digital Bonfire.\n\nLeaving it in 2025. 🔥`,
-                            embeds: [CONFIG.miniAppUrl]  // <--- KEY FIX: Uses your specific Mini App URL
+                            embeds: [CONFIG.miniAppUrl]  // <--- DEEP LINK
                         });
                         return;
                     } catch(e) { console.error("FC Share Error", e); }
                 }
 
-                // Fallback: Browser Sharing (Generate Image)
-                Toast.show("Minting Proof...", "🖼️");
+                // Fallback: Browser Sharing (Open Modal with Download)
+                Toast.show("Generating Proof...", "🖼️");
                 
                 // Ensure canvas exists
                 const c = document.getElementById('share-canvas');
                 if(!c) { console.error("Canvas missing"); return; }
                 const x = c.getContext('2d');
                 
+                // Generate the Black Card
+                this.drawCard(x, t);
+
+                // Show Modal
+                const img = document.getElementById('share-img');
+                const modal = document.getElementById('share-modal');
+                if(img && modal) {
+                    img.src = c.toDataURL();
+                    modal.style.display='flex';
+                }
+            },
+            
+            // New Download Functionality
+            download() {
+                const canvas = document.getElementById('share-canvas');
+                if(!canvas) return;
+                
+                try {
+                    const link = document.createElement('a');
+                    link.download = 'bonfire-proof.png';
+                    link.href = canvas.toDataURL();
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    Toast.show("Saved to Gallery", "💾");
+                } catch(e) {
+                    Toast.show("Use Long Press to Save", "⚠️");
+                }
+            },
+            
+            drawCard(x, t) {
                 // 1. Background (Solid Black)
                 x.fillStyle='#000000'; x.fillRect(0,0,1200,630);
                 
@@ -913,14 +1058,6 @@
                 // Branding
                 x.textAlign='right'; x.fillStyle='#ff4500';
                 x.fillText('THE DIGITAL BONFIRE', 1140, 580);
-
-                // Ensure modal elements exist
-                const img = document.getElementById('share-img');
-                const modal = document.getElementById('share-modal');
-                if(img && modal) {
-                    img.src = c.toDataURL();
-                    modal.style.display='flex';
-                }
             },
             
             // Text Wrap Logic
@@ -957,19 +1094,6 @@
 
         const Debug={log(m){const d=document.getElementById('debug');const l=document.createElement('div');l.innerText=`> ${m}`;d.prepend(l);console.log(m);}};
         
-        const Visuals={
-            c:document.getElementById('canvas-fire').getContext('2d'), a:document.getElementById('canvas-ash').getContext('2d'), p:[], h:0, w:0,
-            init(){this.resize(); window.addEventListener('resize',()=>this.resize()); this.loop();},
-            resize(){this.w=window.innerWidth;this.h=window.innerHeight;this.c.canvas.width=this.a.canvas.width=this.w;this.c.canvas.height=this.a.canvas.height=this.h;},
-            flare(){for(let i=0;i<60;i++)this.p.push({x:this.w/2+(Math.random()-.5)*100,y:this.h,vx:(Math.random()-.5)*2,vy:Math.random()*5+5,l:100,h:Math.random()*40+10,s:Math.random()*6+2});},
-            loop(){
-                this.c.clearRect(0,0,this.w,this.h); this.c.globalCompositeOperation='lighter';
-                if(this.p.length<100)this.p.push({x:this.w/2+(Math.random()-.5)*60,y:this.h,vx:(Math.random()-.5),vy:Math.random()*3+2,l:80,h:Math.random()*30+10,s:Math.random()*4+1});
-                for(let i=this.p.length-1;i>=0;i--){let o=this.p[i];o.x+=o.vx;o.y-=o.vy;o.l--;o.s*=.98;let g=this.c.createRadialGradient(o.x,o.y,0,o.x,o.y,o.s*2);g.addColorStop(0,`hsla(${o.h},100%,60%,${o.l/100})`);g.addColorStop(1,"transparent");this.c.fillStyle=g;this.c.beginPath();this.c.arc(o.x,o.y,o.s*2,0,Math.PI*2);this.c.fill();if(o.l<=0)this.p.splice(i,1);}
-                requestAnimationFrame(()=>this.loop());
-            }
-        };
-
         const AudioFX = {
             ctx: null, init() { try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){} },
             playBurn() {
