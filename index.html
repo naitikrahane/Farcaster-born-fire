@@ -994,7 +994,7 @@
 
     <script type="module">
         try {
-            const { sdk } = await import('https://esm.sh/@farcaster/miniapp-sdk@0.0.61');
+            const { sdk } = await import('https://esm.sh/@farcaster/miniapp-sdk');
             window.sdk = sdk;
             await sdk.actions.ready({ disableNativeGestures: true });
             console.log('✅ Farcaster SDK: Ready signal sent');
